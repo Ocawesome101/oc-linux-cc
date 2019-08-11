@@ -1,0 +1,2261 @@
+{
+  "D:.mbr",
+  "{\
+  \"F:boot.lua\",\
+  \"\\\"-- Boot script for OC-MBR. Fits inside 446 bytes :D --\\\\\\\
+_G.sys = {}\\\\\\\
+-- Set up stdio\\\\\\\
+_G.stdin = ''\\\\\\\
+_G.stdout = ''\\\\\\\
+for name,cmd in pairs(shell.aliases()) do\\\\\\\
+ shell.clearAlias(name)\\\\\\\
+end\\\\\\\
+function sys.log(status,color,message)\\\\\\\
+ term.setTextColor(colors.white)\\\\\\\
+ write('[ ')\\\\\\\
+ term.setTextColor(color)\\\\\\\
+ write(status)\\\\\\\
+ term.setTextColor(colors.white)\\\\\\\
+ print(' ] '..message)\\\\\\\
+end\\\\\\\
+term.clear()\\\\\\\
+term.setCursorPos(1,1)\\\\\\\
+shell.run('/boot/syslinux/bootCC.boot')\\\"\",\
+}",
+  "F:.ocshrc",
+  "\"-- This file is executed by OCSH on login --\"",
+  "F:archiver",
+  "\"print(\\\"Debian CC Archiver v0.1 by 1Ridav\\\")\\\
+tArgs = {...}\\\
+local function getPath(input)\\\
+if string.sub(input, 1, 1)==\\\"/\\\" then path=input else\\\
+path=(\\\"/\\\" .. shell.dir() .. \\\"/\\\" .. input) end\\\
+return path\\\
+end\\\
+if tArgs[2] then\\\
+tArgs[2]=getPath(tArgs[2])\\\
+end\\\
+\\\
+local FFormat = \\\".arch\\\"\\\
+local nFile, nDir, size = 0, 0\\\
+\\\
+if #tArgs < 3 then \\\
+  print(\\\"Usage:\\\"\\\
+    ..\\\"\\\\narchive zip <DIR> <ZIPname> [DIRtoSkip] [DIRtoSkip]\\\"\\\
+    ..\\\"\\\\narchive unzip <ZIPname> <DIR>\\\")\\\
+end\\\
+\\\
+local function fopen(path, mode)\\\
+  local f = fs.open(path, mode)\\\
+  if not f then \\\
+    print(\\\"ERROR: Could not open \\\"..path..\\\" with mode \\\\\\\"\\\"..mode..\\\"\\\\\\\"\\\")\\\
+    exit()\\\
+  end\\\
+  return f\\\
+end\\\
+\\\
+local function skip(df)\\\
+  for i = 3, #tArgs do\\\
+    if tArgs[i] == fs.getName(df) then\\\
+      return true\\\
+    end\\\
+  end\\\
+  for i = 4, #tArgs do\\\
+    if tArgs[i] == fs.getName(df) then\\\
+      return true\\\
+    end\\\
+  end\\\
+  return false\\\
+end\\\
+\\\
+local function zip(file)\\\
+  print(\\\"zipping: \\\".. file)\\\
+  local f = fopen(file, \\\"r\\\")\\\
+  local z = textutils.serialize(f.readAll())\\\
+  f.close()\\\
+  return z\\\
+end\\\
+\\\
+local function ZIP(path)\\\
+  local list = fs.list(path)\\\
+  local array = {}\\\
+  local t, name, d = 0, \\\"\\\", 0\\\
+  \\\
+  for i = 2, #list * 2, 2 do\\\
+    t = i/2\\\
+    local tpath = path..\\\"/\\\"..list[t]\\\
+    if fs.isDir(tpath) then\\\
+      if not skip(tpath) then\\\
+        name = \\\"D:\\\"..list[t]\\\
+        array[i] = ZIP(tpath)\\\
+        nDir = nDir + 1\\\
+      end\\\
+    else\\\
+      name = \\\"F:\\\"..list[t]\\\
+      array[i] = zip(tpath)\\\
+      nFile = nFile + 1\\\
+    end\\\
+    array[i - 1] = name\\\
+  end\\\
+  \\\
+  return textutils.serialize(array)\\\
+end\\\
+\\\
+local function unzip(text, path)\\\
+  print(\\\"unzipping: \\\"..path)\\\
+  local f = fopen(path, \\\"w\\\")\\\
+  f.write(textutils.unserialize(text))\\\
+  f.close()\\\
+end\\\
+\\\
+local function UNZIP(text, path)\\\
+  local array = textutils.unserialize(text)\\\
+  local unz, dp\\\
+  local d = 0\\\
+  for i = 2, #array, 2 do\\\
+    if string.sub(array[i-1], 1, 1) == \\\"D\\\" then\\\
+      dp = string.sub(array[i-1], 3, #array[i-1])\\\
+      fs.makeDir(path..\\\"/\\\"..dp)\\\
+      UNZIP(array[i], path..\\\"/\\\"..dp)\\\
+      nDir = nDir + 1\\\
+    elseif string.sub(array[i-1], 1, 1) == \\\"F\\\" then\\\
+      local p = string.sub(array[i-1], 3, #array[i-1])\\\
+      unzip(array[i], path..\\\"/\\\"..p)\\\
+      nFile = nFile + 1\\\
+    end\\\
+  end\\\
+end\\\
+\\\
+local function result()\\\
+  print(\\\"\\\\nDone\\\"\\\
+    ,\\\"\\\\n   size: \\\"\\\
+    ,size, \\\" B   \\\"\\\
+    ,math.floor(size/1024), \\\" KB\\\"\\\
+    ,\\\"\\\\n   Files:   \\\", nFile\\\
+    ,\\\"\\\\n   Folders: \\\", nDir\\\
+  )\\\
+end\\\
+\\\
+if tArgs[1] == \\\"zip\\\" then\\\
+  if fs.exists(tArgs[2]) and fs.isDir(tArgs[2]) then\\\
+    local zipped = ZIP(shell.resolve(tArgs[2]))\\\
+    local f = fs.open(tArgs[3]..FFormat, \\\"w\\\")\\\
+    f.write(zipped)\\\
+    f.close()\\\
+    zipped = nil\\\
+    size = fs.getSize(tArgs[3]..FFormat)\\\
+    result()   \\\
+  end\\\
+  \\\
+elseif tArgs[1] == \\\"unzip\\\" then\\\
+    local f = fopen(tArgs[2], \\\"r\\\")\\\
+    if not fs.exists(tArgs[3]) then \\\
+      fs.makeDir(tArgs[3]) \\\
+    end\\\
+    UNZIP(f.readAll(), tArgs[3])\\\
+    size = fs.getSize(tArgs[2])\\\
+    result()\\\
+end\"",
+  "D:bin",
+  "{\
+  \"F:cat.lua\",\
+  \"\\\"-- Cat --\\\\\\\
+\\\\\\\
+local args = {...}\\\\\\\
+\\\\\\\
+if not args[1] then\\\\\\\
+ print('Type EOF to exit')\\\\\\\
+ while true do\\\\\\\
+  local text = read()\\\\\\\
+  print(text)\\\\\\\
+  if text == 'EOF' then\\\\\\\
+   break\\\\\\\
+  end\\\\\\\
+ end\\\\\\\
+elseif not fs.exists(args[1]) then\\\\\\\
+ print('cat: ' .. args[1] .. ': No such file or directory')\\\\\\\
+elseif fs.isDir(args[1]) then\\\\\\\
+ print('cat: ' .. args[1] .. ': Is a directory')\\\\\\\
+else\\\\\\\
+ local fileraw = fs.open(args[1],'r')\\\\\\\
+ local file = fileraw.readAll()\\\\\\\
+ fileraw.close()\\\\\\\
+ print(file)\\\\\\\
+end\\\"\",\
+  \"F:cd.lua\",\
+  \"\\\"\\\\\\\
+local tArgs = { ... }\\\\\\\
+if #tArgs < 1 then\\\\\\\
+    shell.setDir('/home/' .. user)\\\\\\\
+    return\\\\\\\
+end\\\\\\\
+\\\\\\\
+local sNewDir = shell.resolve( tArgs[1] )\\\\\\\
+if fs.isDir( sNewDir ) then\\\\\\\
+    shell.setDir( sNewDir )\\\\\\\
+else\\\\\\\
+    print( \\\\\\\"ocsh: cd: \\\\\\\" .. tArgs[1] .. ': No such file or directory' )\\\\\\\
+    return\\\\\\\
+end\\\"\",\
+  \"F:echo.lua\",\
+  \"\\\"-- Echo --\\\\\\\
+\\\\\\\
+local args = {...}\\\\\\\
+\\\\\\\
+if not args[1] then print('') return end\\\\\\\
+\\\\\\\
+if args[1] then\\\\\\\
+ local e = ''\\\\\\\
+ for i=1, #args do\\\\\\\
+  e = e .. args[i] .. ' '\\\\\\\
+  i = i + 1\\\\\\\
+ end\\\\\\\
+ print(e)\\\\\\\
+end\\\"\",\
+  \"F:exit.lua\",\
+  \"\\\"shell.exit()\\\"\",\
+  \"F:ls.lua\",\
+  \"\\\"\\\\\\\
+local tArgs = { ... }\\\\\\\
+\\\\\\\
+-- Get all the files in the directory\\\\\\\
+local sDir = shell.dir()\\\\\\\
+if tArgs[1] ~= nil then\\\\\\\
+    sDir = shell.resolve( tArgs[1] )\\\\\\\
+end\\\\\\\
+\\\\\\\
+if not fs.isDir( sDir ) then\\\\\\\
+    printError( \\\\\\\"Not a directory\\\\\\\" )\\\\\\\
+    return\\\\\\\
+end\\\\\\\
+\\\\\\\
+-- Sort into dirs/files, and calculate column count\\\\\\\
+local tAll = fs.list( sDir )\\\\\\\
+local tFiles = {}\\\\\\\
+local tDirs = {}\\\\\\\
+\\\\\\\
+if tArgs[2] == '-a' then local bShowHidden = tArgs[2] else local bShowHidden = false end\\\\\\\
+for n, sItem in pairs( tAll ) do\\\\\\\
+    if bShowHidden or string.sub( sItem, 1, 1 ) ~= \\\\\\\".\\\\\\\" and sItem ~= 'rom' then\\\\\\\
+        local sPath = fs.combine( sDir, sItem )\\\\\\\
+        if fs.isDir( sPath ) then\\\\\\\
+            table.insert( tDirs, sItem )\\\\\\\
+        else\\\\\\\
+            table.insert( tFiles, sItem )\\\\\\\
+        end\\\\\\\
+    end\\\\\\\
+end\\\\\\\
+table.sort( tDirs )\\\\\\\
+table.sort( tFiles )\\\\\\\
+\\\\\\\
+if term.isColour() then\\\\\\\
+    textutils.pagedTabulate( colors.blue, tDirs, colors.white, tFiles )\\\\\\\
+else\\\\\\\
+    textutils.pagedTabulate( tDirs, tFiles )\\\\\\\
+end\\\"\",\
+  \"F:ocsh.lua\",\
+  \"\\\"local expect = _G[\\\\\\\"~expect\\\\\\\"]\\\\\\\
+\\\\\\\
+local parentShell = shell\\\\\\\
+local parentTerm = term.current()\\\\\\\
+\\\\\\\
+local bExit = false\\\\\\\
+local sDir = (parentShell and parentShell.dir()) or \\\\\\\"\\\\\\\"\\\\\\\
+local sPath = (parentShell and parentShell.path()) or \\\\\\\".:/rom/programs\\\\\\\"\\\\\\\
+local tAliases = (parentShell and parentShell.aliases()) or {}\\\\\\\
+local tCompletionInfo = (parentShell and parentShell.getCompletionInfo()) or {}\\\\\\\
+local tProgramStack = {}\\\\\\\
+\\\\\\\
+local shell = {}\\\\\\\
+local function createShellEnv( sDir )\\\\\\\
+    local tEnv = {}\\\\\\\
+    tEnv[ \\\\\\\"shell\\\\\\\" ] = shell\\\\\\\
+\\\\\\\
+    local package = {}\\\\\\\
+    package.loaded = {\\\\\\\
+        _G = _G,\\\\\\\
+        bit32 = bit32,\\\\\\\
+        coroutine = coroutine,\\\\\\\
+        math = math,\\\\\\\
+        package = package,\\\\\\\
+        string = string,\\\\\\\
+        table = table,\\\\\\\
+    }\\\\\\\
+    package.path = \\\\\\\"?;?.lua;?/init.lua;/rom/modules/main/?;/rom/modules/main/?.lua;/rom/modules/main/?/init.lua\\\\\\\"\\\\\\\
+    if turtle then\\\\\\\
+        package.path = package.path..\\\\\\\";/rom/modules/turtle/?;/rom/modules/turtle/?.lua;/rom/modules/turtle/?/init.lua\\\\\\\"\\\\\\\
+    elseif command then\\\\\\\
+        package.path = package.path..\\\\\\\";/rom/modules/command/?;/rom/modules/command/?.lua;/rom/modules/command/?/init.lua\\\\\\\"\\\\\\\
+    end\\\\\\\
+    package.config = \\\\\\\"/\\\\\\\\n;\\\\\\\\n?\\\\\\\\n!\\\\\\\\n-\\\\\\\"\\\\\\\
+    package.preload = {}\\\\\\\
+    package.loaders = {\\\\\\\
+        function( name )\\\\\\\
+            if package.preload[name] then\\\\\\\
+                return package.preload[name]\\\\\\\
+            else\\\\\\\
+                return nil, \\\\\\\"no field package.preload['\\\\\\\" .. name .. \\\\\\\"']\\\\\\\"\\\\\\\
+            end\\\\\\\
+        end,\\\\\\\
+        function( name )\\\\\\\
+            local fname = string.gsub(name, \\\\\\\"%.\\\\\\\", \\\\\\\"/\\\\\\\")\\\\\\\
+            local sError = \\\\\\\"\\\\\\\"\\\\\\\
+            for pattern in string.gmatch(package.path, \\\\\\\"[^;]+\\\\\\\") do\\\\\\\
+                local sPath = string.gsub(pattern, \\\\\\\"%?\\\\\\\", fname)\\\\\\\
+                if sPath:sub(1,1) ~= \\\\\\\"/\\\\\\\" then\\\\\\\
+                    sPath = fs.combine(sDir, sPath)\\\\\\\
+                end\\\\\\\
+                if fs.exists(sPath) and not fs.isDir(sPath) then\\\\\\\
+                    local fnFile, sError = loadfile( sPath, tEnv )\\\\\\\
+                    if fnFile then\\\\\\\
+                        return fnFile, sPath\\\\\\\
+                    else\\\\\\\
+                        return nil, sError\\\\\\\
+                    end\\\\\\\
+                else\\\\\\\
+                    if #sError > 0 then\\\\\\\
+                        sError = sError .. \\\\\\\"\\\\\\\\n  \\\\\\\"\\\\\\\
+                    end\\\\\\\
+                    sError = sError .. \\\\\\\"no file '\\\\\\\" .. sPath .. \\\\\\\"'\\\\\\\"\\\\\\\
+                end\\\\\\\
+            end\\\\\\\
+            return nil, sError\\\\\\\
+        end\\\\\\\
+    }\\\\\\\
+\\\\\\\
+    local sentinel = {}\\\\\\\
+    local function require( name )\\\\\\\
+        expect(1, name, \\\\\\\"string\\\\\\\")\\\\\\\
+        if package.loaded[name] == sentinel then\\\\\\\
+            error(\\\\\\\"loop or previous error loading module '\\\\\\\" .. name .. \\\\\\\"'\\\\\\\", 0)\\\\\\\
+        end\\\\\\\
+        if package.loaded[name] then\\\\\\\
+            return package.loaded[name]\\\\\\\
+        end\\\\\\\
+\\\\\\\
+        local sError = \\\\\\\"module '\\\\\\\" .. name .. \\\\\\\"' not found:\\\\\\\"\\\\\\\
+        for _, searcher in ipairs(package.loaders) do\\\\\\\
+            local loader = table.pack(searcher(name))\\\\\\\
+            if loader[1] then\\\\\\\
+                package.loaded[name] = sentinel\\\\\\\
+                local result = loader[1](name, table.unpack(loader, 2, loader.n))\\\\\\\
+                if result == nil then result = true end\\\\\\\
+\\\\\\\
+                package.loaded[name] = result\\\\\\\
+                return result\\\\\\\
+            else\\\\\\\
+                sError = sError .. \\\\\\\"\\\\\\\\n  \\\\\\\" .. loader[2]\\\\\\\
+            end\\\\\\\
+        end\\\\\\\
+        error(sError, 2)\\\\\\\
+    end\\\\\\\
+\\\\\\\
+    tEnv[\\\\\\\"package\\\\\\\"] = package\\\\\\\
+    tEnv[\\\\\\\"require\\\\\\\"] = require\\\\\\\
+\\\\\\\
+    return tEnv\\\\\\\
+end\\\\\\\
+\\\\\\\
+-- Colours\\\\\\\
+local promptColour, textColour, bgColour\\\\\\\
+if term.isColour() then\\\\\\\
+    promptColour = colours.white\\\\\\\
+    textColour = colours.white\\\\\\\
+    bgColour = colours.black\\\\\\\
+else\\\\\\\
+    promptColour = colours.white\\\\\\\
+    textColour = colours.white\\\\\\\
+    bgColour = colours.black\\\\\\\
+end\\\\\\\
+\\\\\\\
+local function run( _sCommand, ... )\\\\\\\
+    local sPath = shell.resolveProgram( _sCommand )\\\\\\\
+    if sPath ~= nil then\\\\\\\
+        tProgramStack[#tProgramStack + 1] = sPath\\\\\\\
+        if multishell then\\\\\\\
+            local sTitle = fs.getName( sPath )\\\\\\\
+            if sTitle:sub(-4) == \\\\\\\".lua\\\\\\\" then\\\\\\\
+                sTitle = sTitle:sub(1,-5)\\\\\\\
+            end\\\\\\\
+            multishell.setTitle( multishell.getCurrent(), sTitle )\\\\\\\
+        end\\\\\\\
+\\\\\\\
+        local sDir = fs.getDir( sPath )\\\\\\\
+        local env = createShellEnv( sDir )\\\\\\\
+        env[ \\\\\\\"arg\\\\\\\" ] = { [0] = _sCommand, ... }\\\\\\\
+        local result = os.run( env, sPath, ... )\\\\\\\
+\\\\\\\
+        tProgramStack[#tProgramStack] = nil\\\\\\\
+        if multishell then\\\\\\\
+            if #tProgramStack > 0 then\\\\\\\
+                local sTitle = fs.getName( tProgramStack[#tProgramStack] )\\\\\\\
+                if sTitle:sub(-4) == \\\\\\\".lua\\\\\\\" then\\\\\\\
+                    sTitle = sTitle:sub(1,-5)\\\\\\\
+                end\\\\\\\
+                multishell.setTitle( multishell.getCurrent(), sTitle )\\\\\\\
+            else\\\\\\\
+                multishell.setTitle( multishell.getCurrent(), \\\\\\\"shell\\\\\\\" )\\\\\\\
+            end\\\\\\\
+        end\\\\\\\
+        return result\\\\\\\
+       else\\\\\\\
+        print( \\\\\\\"ocsh: \\\\\\\" .. _sCommand .. ': command not found' )\\\\\\\
+        return false\\\\\\\
+    end\\\\\\\
+end\\\\\\\
+\\\\\\\
+local function tokenise( ... )\\\\\\\
+    local sLine = table.concat( { ... }, \\\\\\\" \\\\\\\" )\\\\\\\
+    local tWords = {}\\\\\\\
+    local bQuoted = false\\\\\\\
+    for match in string.gmatch( sLine .. \\\\\\\"\\\\\\\\\\\\\\\"\\\\\\\", \\\\\\\"(.-)\\\\\\\\\\\\\\\"\\\\\\\" ) do\\\\\\\
+        if bQuoted then\\\\\\\
+            table.insert( tWords, match )\\\\\\\
+        else\\\\\\\
+            for m in string.gmatch( match, \\\\\\\"[^ \\\\\\\\t]+\\\\\\\" ) do\\\\\\\
+                table.insert( tWords, m )\\\\\\\
+            end\\\\\\\
+        end\\\\\\\
+        bQuoted = not bQuoted\\\\\\\
+    end\\\\\\\
+    return tWords\\\\\\\
+end\\\\\\\
+\\\\\\\
+-- Install shell API\\\\\\\
+function shell.run( ... )\\\\\\\
+    local tWords = tokenise( ... )\\\\\\\
+    local sCommand = tWords[1]\\\\\\\
+    if sCommand then\\\\\\\
+        if not fs.isDir(shell.resolve(sCommand)) then\\\\\\\
+            return run( sCommand, table.unpack( tWords, 2 ) )\\\\\\\
+        end\\\\\\\
+    end\\\\\\\
+    return false\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.exit()\\\\\\\
+    bExit = true\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.dir()\\\\\\\
+    if sDir:sub(1,1) == '/' then\\\\\\\
+        return sDir\\\\\\\
+    else\\\\\\\
+        return '/' .. sDir\\\\\\\
+    end\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.setDir( _sDir )\\\\\\\
+    expect(1, _sDir, \\\\\\\"string\\\\\\\")\\\\\\\
+    if not fs.isDir( _sDir ) then\\\\\\\
+        error( \\\\\\\"Not a directory\\\\\\\", 2 )\\\\\\\
+    end\\\\\\\
+    sDir = _sDir\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.path()\\\\\\\
+    return sPath\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.setPath( _sPath )\\\\\\\
+    expect(1, _sPath, \\\\\\\"string\\\\\\\")\\\\\\\
+    sPath = _sPath\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.resolve( _sPath )\\\\\\\
+    expect(1, _sPath, \\\\\\\"string\\\\\\\")\\\\\\\
+    local sStartChar = string.sub( _sPath, 1, 1 )\\\\\\\
+    if sStartChar == \\\\\\\"/\\\\\\\" or sStartChar == \\\\\\\"\\\\\\\\\\\\\\\\\\\\\\\" then\\\\\\\
+        return fs.combine( \\\\\\\"\\\\\\\", _sPath )\\\\\\\
+    else\\\\\\\
+        return fs.combine( sDir, _sPath )\\\\\\\
+    end\\\\\\\
+end\\\\\\\
+\\\\\\\
+local function pathWithExtension( _sPath, _sExt )\\\\\\\
+    local nLen = #sPath\\\\\\\
+    local sEndChar = string.sub( _sPath, nLen, nLen )\\\\\\\
+    -- Remove any trailing slashes so we can add an extension to the path safely\\\\\\\
+    if sEndChar == \\\\\\\"/\\\\\\\" or sEndChar == \\\\\\\"\\\\\\\\\\\\\\\\\\\\\\\" then\\\\\\\
+        _sPath = string.sub( _sPath, 1, nLen - 1 )\\\\\\\
+    end\\\\\\\
+    return _sPath .. \\\\\\\".\\\\\\\" .. _sExt\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.resolveProgram( _sCommand )\\\\\\\
+    expect(1, _sCommand, \\\\\\\"string\\\\\\\")\\\\\\\
+    -- Substitute aliases firsts\\\\\\\
+    if tAliases[ _sCommand ] ~= nil then\\\\\\\
+        _sCommand = tAliases[ _sCommand ]\\\\\\\
+    end\\\\\\\
+\\\\\\\
+    -- If the path is a global path, use it directly\\\\\\\
+    if _sCommand:find(\\\\\\\"/\\\\\\\") or _sCommand:find(\\\\\\\"\\\\\\\\\\\\\\\\\\\\\\\") then\\\\\\\
+        local sPath = shell.resolve( _sCommand )\\\\\\\
+        if fs.exists( sPath ) and not fs.isDir( sPath ) then\\\\\\\
+            return sPath\\\\\\\
+        else\\\\\\\
+            local sPathLua = pathWithExtension( sPath, \\\\\\\"lua\\\\\\\" )\\\\\\\
+            if fs.exists( sPathLua ) and not fs.isDir( sPathLua ) then\\\\\\\
+                return sPathLua\\\\\\\
+            end\\\\\\\
+        end\\\\\\\
+        return nil\\\\\\\
+    end\\\\\\\
+\\\\\\\
+     -- Otherwise, look on the path variable\\\\\\\
+    for sPath in string.gmatch(sPath, \\\\\\\"[^:]+\\\\\\\") do\\\\\\\
+        sPath = fs.combine( shell.resolve( sPath ), _sCommand )\\\\\\\
+        if fs.exists( sPath ) and not fs.isDir( sPath ) then\\\\\\\
+            return sPath\\\\\\\
+        else\\\\\\\
+            local sPathLua = pathWithExtension( sPath, \\\\\\\"lua\\\\\\\" )\\\\\\\
+            if fs.exists( sPathLua ) and not fs.isDir( sPathLua ) then\\\\\\\
+                return sPathLua\\\\\\\
+            end\\\\\\\
+        end\\\\\\\
+    end\\\\\\\
+\\\\\\\
+    -- Not found\\\\\\\
+    return nil\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.programs( _bIncludeHidden )\\\\\\\
+    local tItems = {}\\\\\\\
+\\\\\\\
+    -- Add programs from the path\\\\\\\
+    for sPath in string.gmatch(sPath, \\\\\\\"[^:]+\\\\\\\") do\\\\\\\
+        sPath = shell.resolve( sPath )\\\\\\\
+        if fs.isDir( sPath ) then\\\\\\\
+            local tList = fs.list( sPath )\\\\\\\
+            for n=1,#tList do\\\\\\\
+                local sFile = tList[n]\\\\\\\
+                if not fs.isDir( fs.combine( sPath, sFile ) ) and\\\\\\\
+                   (_bIncludeHidden or string.sub( sFile, 1, 1 ) ~= \\\\\\\".\\\\\\\") then\\\\\\\
+                    if #sFile > 4 and sFile:sub(-4) == \\\\\\\".lua\\\\\\\" then\\\\\\\
+                        sFile = sFile:sub(1,-5)\\\\\\\
+                    end\\\\\\\
+                    tItems[ sFile ] = true\\\\\\\
+                end\\\\\\\
+            end\\\\\\\
+        end\\\\\\\
+    end\\\\\\\
+\\\\\\\
+    -- Sort and return\\\\\\\
+    local tItemList = {}\\\\\\\
+    for sItem, b in pairs( tItems ) do\\\\\\\
+        table.insert( tItemList, sItem )\\\\\\\
+    end\\\\\\\
+    table.sort( tItemList )\\\\\\\
+    return tItemList\\\\\\\
+end\\\\\\\
+\\\\\\\
+local function completeProgram( sLine )\\\\\\\
+    if #sLine > 0 and (sLine:find(\\\\\\\"/\\\\\\\") or sLine:find(\\\\\\\"\\\\\\\\\\\\\\\\\\\\\\\")) then\\\\\\\
+        -- Add programs from the root\\\\\\\
+        return fs.complete( sLine, sDir, true, false )\\\\\\\
+\\\\\\\
+    else\\\\\\\
+        local tResults = {}\\\\\\\
+        local tSeen = {}\\\\\\\
+\\\\\\\
+        -- Add aliases\\\\\\\
+        for sAlias, sCommand in pairs( tAliases ) do\\\\\\\
+            if #sAlias > #sLine and string.sub( sAlias, 1, #sLine ) == sLine then\\\\\\\
+                local sResult = string.sub( sAlias, #sLine + 1 )\\\\\\\
+                if not tSeen[ sResult ] then\\\\\\\
+                    table.insert( tResults, sResult )\\\\\\\
+                    tSeen[ sResult ] = true\\\\\\\
+                end\\\\\\\
+            end\\\\\\\
+        end\\\\\\\
+\\\\\\\
+        -- Add all subdirectories. We don't include files as they will be added in the block below\\\\\\\
+        local tDirs = fs.complete( sLine, sDir, false, false )\\\\\\\
+        for i = 1, #tDirs do\\\\\\\
+            local sResult = tDirs[i]\\\\\\\
+            if not tSeen[ sResult ] then\\\\\\\
+                table.insert ( tResults, sResult )\\\\\\\
+                tSeen [ sResult ] = true\\\\\\\
+            end\\\\\\\
+        end\\\\\\\
+\\\\\\\
+        -- Add programs from the path\\\\\\\
+        local tPrograms = shell.programs()\\\\\\\
+        for n=1,#tPrograms do\\\\\\\
+            local sProgram = tPrograms[n]\\\\\\\
+            if #sProgram > #sLine and string.sub( sProgram, 1, #sLine ) == sLine then\\\\\\\
+                local sResult = string.sub( sProgram, #sLine + 1 )\\\\\\\
+                if not tSeen[ sResult ] then\\\\\\\
+                    table.insert( tResults, sResult )\\\\\\\
+                    tSeen[ sResult ] = true\\\\\\\
+                end\\\\\\\
+            end\\\\\\\
+        end\\\\\\\
+\\\\\\\
+        -- Sort and return\\\\\\\
+        table.sort( tResults )\\\\\\\
+        return tResults\\\\\\\
+    end\\\\\\\
+end\\\\\\\
+\\\\\\\
+local function completeProgramArgument( sProgram, nArgument, sPart, tPreviousParts )\\\\\\\
+    local tInfo = tCompletionInfo[ sProgram ]\\\\\\\
+    if tInfo then\\\\\\\
+        return tInfo.fnComplete( shell, nArgument, sPart, tPreviousParts )\\\\\\\
+    end\\\\\\\
+    return nil\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.complete( sLine )\\\\\\\
+    expect(1, sLine, \\\\\\\"string\\\\\\\")\\\\\\\
+    if #sLine > 0 then\\\\\\\
+        local tWords = tokenise( sLine )\\\\\\\
+        local nIndex = #tWords\\\\\\\
+        if string.sub( sLine, #sLine, #sLine ) == \\\\\\\" \\\\\\\" then\\\\\\\
+            nIndex = nIndex + 1\\\\\\\
+        end\\\\\\\
+        if nIndex == 1 then\\\\\\\
+            local sBit = tWords[1] or \\\\\\\"\\\\\\\"\\\\\\\
+            local sPath = shell.resolveProgram( sBit )\\\\\\\
+            if tCompletionInfo[ sPath ] then\\\\\\\
+                return { \\\\\\\" \\\\\\\" }\\\\\\\
+            else\\\\\\\
+                local tResults = completeProgram( sBit )\\\\\\\
+                for n=1,#tResults do\\\\\\\
+                    local sResult = tResults[n]\\\\\\\
+                    local sPath = shell.resolveProgram( sBit .. sResult )\\\\\\\
+                    if tCompletionInfo[ sPath ] then\\\\\\\
+                        tResults[n] = sResult .. \\\\\\\" \\\\\\\"\\\\\\\
+                    end\\\\\\\
+                end\\\\\\\
+                return tResults\\\\\\\
+            end\\\\\\\
+\\\\\\\
+        elseif nIndex > 1 then\\\\\\\
+            local sPath = shell.resolveProgram( tWords[1] )\\\\\\\
+            local sPart = tWords[nIndex] or \\\\\\\"\\\\\\\"\\\\\\\
+            local tPreviousParts = tWords\\\\\\\
+            tPreviousParts[nIndex] = nil\\\\\\\
+            return completeProgramArgument( sPath , nIndex - 1, sPart, tPreviousParts )\\\\\\\
+\\\\\\\
+        end\\\\\\\
+    end\\\\\\\
+    return nil\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.completeProgram( sProgram )\\\\\\\
+    expect(1, sProgram, \\\\\\\"string\\\\\\\")\\\\\\\
+    return completeProgram( sProgram )\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.setCompletionFunction( sProgram, fnComplete )\\\\\\\
+    expect(1, sProgram, \\\\\\\"string\\\\\\\")\\\\\\\
+    expect(2, fnComplete, \\\\\\\"function\\\\\\\")\\\\\\\
+    tCompletionInfo[ sProgram ] = {\\\\\\\
+        fnComplete = fnComplete\\\\\\\
+    }\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.getCompletionInfo()\\\\\\\
+    return tCompletionInfo\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.getRunningProgram()\\\\\\\
+    if #tProgramStack > 0 then\\\\\\\
+        return tProgramStack[#tProgramStack]\\\\\\\
+    end\\\\\\\
+    return nil\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.setAlias( _sCommand, _sProgram )\\\\\\\
+    expect(1, _sCommand, \\\\\\\"string\\\\\\\")\\\\\\\
+    expect(2, _sProgram, \\\\\\\"string\\\\\\\")\\\\\\\
+    tAliases[ _sCommand ] = _sProgram\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.clearAlias( _sCommand )\\\\\\\
+    expect(1, _sCommand, \\\\\\\"string\\\\\\\")\\\\\\\
+    tAliases[ _sCommand ] = nil\\\\\\\
+end\\\\\\\
+\\\\\\\
+function shell.aliases()\\\\\\\
+    -- Copy aliases\\\\\\\
+    local tCopy = {}\\\\\\\
+    for sAlias, sCommand in pairs( tAliases ) do\\\\\\\
+        tCopy[sAlias] = sCommand\\\\\\\
+    end\\\\\\\
+    return tCopy\\\\\\\
+end\\\\\\\
+\\\\\\\
+local tArgs = { ... }\\\\\\\
+if #tArgs > 0 then\\\\\\\
+    -- \\\\\\\"shell x y z\\\\\\\"\\\\\\\
+    -- Run the program specified on the commandline\\\\\\\
+    shell.run( ... )\\\\\\\
+\\\\\\\
+else\\\\\\\
+    -- \\\\\\\"shell\\\\\\\"\\\\\\\
+    -- Print the header\\\\\\\
+    term.setBackgroundColor( bgColour )\\\\\\\
+    term.setTextColour( textColour )\\\\\\\
+\\\\\\\
+    -- Read commands and execute them\\\\\\\
+    local tCommandHistory = {}\\\\\\\
+    shell.setPath('/sbin:/bin:/usr/bin:/usr/sbin:/uar/games:/usr/local/bin')\\\\\\\
+    while not bExit do\\\\\\\
+        term.redirect( parentTerm )\\\\\\\
+        term.setBackgroundColor( bgColour )\\\\\\\
+        term.setTextColour( promptColour )\\\\\\\
+        local dir, sym\\\\\\\
+        if shell.dir() == '/home/'..user then\\\\\\\
+            dir = '~'\\\\\\\
+        else\\\\\\\
+            dir = shell.dir()\\\\\\\
+        end\\\\\\\
+        if uid == 1 then\\\\\\\
+            sym = \\\\\\\"# \\\\\\\"\\\\\\\
+        else\\\\\\\
+            sym = \\\\\\\"$ \\\\\\\"\\\\\\\
+        end\\\\\\\
+        write( user .. \\\\\\\"@\\\\\\\" .. _HOSTNAME .. \\\\\\\": \\\\\\\" .. dir .. sym )\\\\\\\
+        term.setTextColour( textColour )\\\\\\\
+\\\\\\\
+        local sLine\\\\\\\
+        sLine = read( nil, tCommandHistory )\\\\\\\
+        \\\\\\\
+        if fs.isDir(sLine) then\\\\\\\
+            print('ocsh: ' .. tokenise(sLine)[1] .. ': Is a directory')\\\\\\\
+        elseif sLine:match(\\\\\\\"%S\\\\\\\") and tCommandHistory[#tCommandHistory] ~= sLine then\\\\\\\
+            table.insert( tCommandHistory, sLine )\\\\\\\
+        end\\\\\\\
+        shell.run( sLine )\\\\\\\
+    end\\\\\\\
+end\\\"\",\
+}",
+  "D:boot",
+  "{\
+  \"D:syslinux\",\
+  \"{\\\
+  \\\"F:bootCC.boot\\\",\\\
+  \\\"\\\\\\\"-- Syslinux for ComputerCraft and OC BIOS --\\\\\\\\\\\\\\\
+term.setCursorPos(1,1)\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+print('Syslinux-CC v0.2.3, built on August 8 2019 by Ocawesome101')\\\\\\\\\\\\\\\
+print('Loading /boot/vmlinux...')\\\\\\\\\\\\\\\
+shell.run('/boot/vmlinux')\\\\\\\"\\\",\\\
+}\",\
+  \"F:vmlinux.lua\",\
+  \"\\\"-- The OC Linux kernel. --\\\\\\\
+\\\\\\\
+-- Functions\\\\\\\
+_G.KV = 'Linux version 0.6.0-1-OC (CC version 1.8) Thurs Aug 8 20:23:03 UTC 2019'\\\\\\\
+\\\\\\\
+local old = os.pullEvent \\\\\\\
+\\\\\\\
+os.pullEvent = os.pullEventRaw \\\\\\\
+\\\\\\\
+_G.kernel = {}\\\\\\\
+_G.display = {}\\\\\\\
+\\\\\\\
+_G.biosTime = os.time()\\\\\\\
+\\\\\\\
+_G.getTime = function()\\\\\\\
+ return os.time() - biosTime\\\\\\\
+end\\\\\\\
+\\\\\\\
+function kernel.halt()\\\\\\\
+ log('Fast shutdown: no')\\\\\\\
+ log('Spectre V2: no mitigations to disable')\\\\\\\
+ local dirs = {'/proc','/run','/tmp','/sys','/dev'}\\\\\\\
+ for i=1, #dirs do\\\\\\\
+  fs.delete(dirs[i])\\\\\\\
+  i = i + 1\\\\\\\
+ end\\\\\\\
+ log('devtmpfs: uninitialized')\\\\\\\
+ log('pci_bus 0000:00: computercraft display')\\\\\\\
+ log('ACPI: bus type PCI unregistered')\\\\\\\
+ log('cc6451: PNP: No PS/2 controller to uninitialize')\\\\\\\
+ log('CC-FS (ccd1): unmounted filesystem')\\\\\\\
+ log('ACPI: bus type CCDB unregistered')\\\\\\\
+ log('Calling ACPI shutdown')\\\\\\\
+ _LOG.close()\\\\\\\
+ os.shutdown()\\\\\\\
+end\\\\\\\
+\\\\\\\
+function kernel.restart()\\\\\\\
+ log('Fast shutdown: no')\\\\\\\
+ log('Spectre V2: no mitigations to disable')\\\\\\\
+ local dirs = {'/proc','/run','/tmp','/sys','/dev'}\\\\\\\
+ for i=1, #dirs do\\\\\\\
+  fs.delete(dirs[i])\\\\\\\
+  i = i + 1\\\\\\\
+ end\\\\\\\
+ log('devtmpfs: uninitialized')\\\\\\\
+ log('pci_bus 0000:00: computercraft display')\\\\\\\
+ log('ACPI: bus type PCI unregistered')\\\\\\\
+ log('cc6451: PNP: No PS/2 controller to uninitialize')\\\\\\\
+ log('CC-FS (ccd1): unmounted filesystem')\\\\\\\
+ log('ACPI: bus type CCDB unregistered')\\\\\\\
+ log('Calling ACPI reboot')\\\\\\\
+ _LOG.close()\\\\\\\
+ os.reboot()\\\\\\\
+end\\\\\\\
+\\\\\\\
+function kernel.panic(reason)\\\\\\\
+ syslog('Kernel panic: '..reason)\\\\\\\
+ syslog('Press R to shutdown')\\\\\\\
+ local file = fs.open('/var/log/panic.log','w')\\\\\\\
+ file.write('[ '..getTime()..' ] Kernel panic: '..reason)\\\\\\\
+ file.close()\\\\\\\
+ while true do\\\\\\\
+  local e,id = os.pullEventRaw()\\\\\\\
+  if e == 'char' then\\\\\\\
+   if id == 'r' then\\\\\\\
+    os.shutdown()\\\\\\\
+   end\\\\\\\
+  end\\\\\\\
+ end\\\\\\\
+end\\\\\\\
+\\\\\\\
+function kernel.version()\\\\\\\
+ return _G.KV\\\\\\\
+end\\\\\\\
+\\\\\\\
+function os.version()\\\\\\\
+ return kernel.version()\\\\\\\
+end\\\\\\\
+\\\\\\\
+function display.getSize()\\\\\\\
+ return term.getSize()\\\\\\\
+end\\\\\\\
+\\\\\\\
+-- Set up logging\\\\\\\
+if fs.exists('/var/log/dmesg.log.old') then\\\\\\\
+ fs.delete('/var/log/dmesg.log.old')\\\\\\\
+end\\\\\\\
+\\\\\\\
+if fs.exists('/var/log/dmesg.log') then\\\\\\\
+ fs.move('/var/log/dmesg.log','/var/log/dmesg.log.old')\\\\\\\
+end\\\\\\\
+_G._LOG = fs.open('/var/log/dmesg.log','a')\\\\\\\
+\\\\\\\
+function _G.log(string)\\\\\\\
+ local time = tostring(getTime()):sub(1,4)\\\\\\\
+ local out = '[ '..time..' ] '..string\\\\\\\
+ print(out)\\\\\\\
+ _LOG.write(out..'\\\\\\\\n')\\\\\\\
+ os.sleep(0.0001)\\\\\\\
+end\\\\\\\
+\\\\\\\
+function _G.syslog(str)\\\\\\\
+ log(str)\\\\\\\
+end\\\\\\\
+\\\\\\\
+-- Function to get approximate CPU speed\\\\\\\
+local function getClock()\\\\\\\
+ local ct = {}\\\\\\\
+ local cc = 20\\\\\\\
+\\\\\\\
+ for i=1, cc do\\\\\\\
+  clock = os.clock()\\\\\\\
+  stop = clock + (1/cc)\\\\\\\
+  local c = 0\\\\\\\
+  while clock < stop do\\\\\\\
+   clock = os.clock()\\\\\\\
+   c = c + 1\\\\\\\
+  end\\\\\\\
+  table.insert(ct,c)\\\\\\\
+ end\\\\\\\
+ local t = 0\\\\\\\
+ \\\\\\\
+ for k,v in pairs(ct) do\\\\\\\
+  t = t + v \\\\\\\
+ end\\\\\\\
+ \\\\\\\
+ local function rd(va,pl)\\\\\\\
+  return math.floor((va/pl) + 0.5) * pl\\\\\\\
+ end\\\\\\\
+ \\\\\\\
+ local avg = t / cc \\\\\\\
+ local hz = avg * 20\\\\\\\
+ local khz = rd((hz/1000),0.001)\\\\\\\
+\\\\\\\
+ return khz\\\\\\\
+end\\\\\\\
+\\\\\\\
+--Startup\\\\\\\
+cpuid = 'ComputerCraft CC6451'\\\\\\\
+_G._ARCH, _G._CPUID = 'CC6451', cpuid\\\\\\\
+\\\\\\\
+log(os.version())\\\\\\\
+log('KERNEL supported cpus:')\\\\\\\
+log(' ComputerCraft CC6451')\\\\\\\
+log('secureboot: No secure boot detected')\\\\\\\
+if term.isColor() then\\\\\\\
+ pcid = 'ComputerCraft Advanced Computer'\\\\\\\
+ hwid = pcid..'/Color Computer'\\\\\\\
+else\\\\\\\
+ pcid = 'ComputerCraft Standard Computer'\\\\\\\
+ hwid = pcid..'/Grayscale Computer'\\\\\\\
+end\\\\\\\
+log('DMI: '..hwid)\\\\\\\
+log('ACPI: Supported ACPI: shutdown, reboot')\\\\\\\
+log('ACPI: Suspend and sleep are not supported')\\\\\\\
+log('Booting nonvirtualized kernel on ComputerCraft hardware')\\\\\\\
+log('DMAR: IOMMU not enabled: unsupported CPU architecture CC6451')\\\\\\\
+\\\\\\\
+local cpuspeed = getClock()\\\\\\\
+\\\\\\\
+log('Detected '..cpuspeed..'KHz processor')\\\\\\\
+\\\\\\\
+log('CPU: Physical Processor ID: 0')\\\\\\\
+log('CPU: Processor Core ID: 0')\\\\\\\
+log('CPU0: Thermal monitoring disabled (not needed)')\\\\\\\
+log('Spectre V2: Unaffected CPU architecture')\\\\\\\
+log('Spectre V2: Mitigation not enabled')\\\\\\\
+log('smpboot: CPU0: '..cpuid)\\\\\\\
+log('Performance Events: Lua5.1 events')\\\\\\\
+log('smp: Bringing up secondary CPUs ...')\\\\\\\
+log('smp: No secondary CPUs found')\\\\\\\
+log('smp: brought up 0 node, 1 CPUs')\\\\\\\
+log('smpboot: Total of 1 processors activated')\\\\\\\
+log('devtmpfs: initialized')\\\\\\\
+log('ACPI: bus type PCI registered')\\\\\\\
+log('pci_bus 0000:00: computercraft display')\\\\\\\
+log('PCI-DMA: Using software rendering for display')\\\\\\\
+log('efifb: dmi detected '..pcid..' - software rendering enabled')\\\\\\\
+local w,h = display.getSize()\\\\\\\
+if term.isColor() then\\\\\\\
+ depth = 4\\\\\\\
+else\\\\\\\
+ depth = 1\\\\\\\
+end\\\\\\\
+log('efifb: mode is '..tostring(w)..'x'..tostring(h)..'x'..tostring(depth))\\\\\\\
+log('cc6451: PNP: No PS/2 controller found.')\\\\\\\
+log('ACPI: bus type CCDB registered')\\\\\\\
+log('ccdb1: CCDB size '..fs.getSize('/'))\\\\\\\
+\\\\\\\
+local dirs = {'/proc','/run','/tmp','/sys','/dev'}\\\\\\\
+for i=1, #dirs do\\\\\\\
+ fs.makeDir(dirs[i])\\\\\\\
+end\\\\\\\
+log('CC-FS (ccd1): mounted filesystem with ordered data mode')\\\\\\\
+shell.run('/sbin/ccinit.lua')\\\"\",\
+}",
+  "D:etc",
+  "{\
+  \"F:hostname\",\
+  \"\\\"oclinux\\\"\",\
+  \"F:motd\",\
+  \"\\\"Welcome to OC Linux!\\\\\\\
+\\\\\\\
+Check out the Wiki at https://ocawesome101.github.io/oc-linux-cc \\\\\\\
+\\\\\\\
+Need to file an issue? Visit https://ocawesome101/github.io/oc-linux-cc/bugs.html\\\"\",\
+  \"F:passwd\",\
+  \"\\\"toortoortoor\\\\\\\
+drowssapdrawssapdrawssap\\\"\",\
+  \"D:skel\",\
+  \"{\\\
+  \\\"F:.ocshrc\\\",\\\
+  \\\"\\\\\\\"\\\\\\\"\\\",\\\
+}\",\
+  \"F:users\",\
+  \"\\\"root\\\\\\\
+user\\\"\",\
+}",
+  "D:home",
+  "{\
+  \"D:root\",\
+  \"{\\\
+  \\\"F:test.sh\\\",\\\
+  \\\"\\\\\\\"cat test.sh\\\\\\\"\\\",\\\
+}\",\
+  \"D:user\",\
+  \"{}\",\
+}",
+  "D:lib",
+  "{}",
+  "D:mnt",
+  "{}",
+  "D:opt",
+  "{}",
+  "D:opt",
+  [ 23 ] = "D:root",
+  [ 24 ] = "{}",
+  [ 25 ] = "D:sbin",
+  [ 26 ] = "{\
+  \"F:ccinit.lua\",\
+  \"\\\"-- Init script for OC Linux --\\\\\\\
+\\\\\\\
+_G._CCINIT_VERSION = '0.2.2-09-0-cc'\\\\\\\
+\\\\\\\
+_G.ccinit = {}\\\\\\\
+\\\\\\\
+function ccinit.shutdown()\\\\\\\
+ syslog('ccinit[1]: Unloading system modules')\\\\\\\
+ syslog('ccinit[1]: Unmounting disks')\\\\\\\
+ syslog('ccinit[1]: Unmounted disks')\\\\\\\
+ syslog('ccinit[1]: Exiting ccinit')\\\\\\\
+ kernel.halt()\\\\\\\
+end\\\\\\\
+\\\\\\\
+function ccinit.reboot()\\\\\\\
+ syslog('ccinit[1]: Unloading system modules')\\\\\\\
+ syslog('ccinit[1]: Unmounting disks')\\\\\\\
+ syslog('ccinit[1]: Unmounted disks')\\\\\\\
+ syslog('ccinit[1]: Exiting ccinit')\\\\\\\
+ kernel.restart()\\\\\\\
+end\\\\\\\
+\\\\\\\
+\\\\\\\
+syslog('ccinit[1]: ccinit '.._CCINIT_VERSION..' running in system mode.')\\\\\\\
+syslog('ccinit[1]: Detected architecture '.._ARCH)\\\\\\\
+local file = fs.open('/etc/hostname','r')\\\\\\\
+_G._HOSTNAME = file.readAll()\\\\\\\
+file.close()\\\\\\\
+os.setComputerLabel(_HOSTNAME)\\\\\\\
+syslog('ccinit[1]: Set hostname to <'.._HOSTNAME..'>')\\\\\\\
+syslog('ccinit[1]: Finding peripherals')\\\\\\\
+local sides = {'top','bottom','left','right','back'}\\\\\\\
+for i=1, #sides do\\\\\\\
+ if disk.isPresent(sides[i]) then\\\\\\\
+  syslog('ccinit[1]: Mounted disk from side '..sides[i]..' at '..disk.getMountPath(sides[i]))\\\\\\\
+ end\\\\\\\
+ i = i + 1\\\\\\\
+end\\\\\\\
+\\\\\\\
+syslog('ccinit[1]: Welcome to OC Linux!')\\\\\\\
+if not term.isColor() then\\\\\\\
+ syslog('ccinit[1]: warn: Non-advanced computers are not officially supported')\\\\\\\
+end\\\\\\\
+\\\\\\\
+if not _G.craftOS_version == 'CraftOS 1.8' then\\\\\\\
+ syslog('ccinit[1]: warn: Only CraftOS 1.8 is officially supported')\\\\\\\
+end\\\\\\\
+syslog('ccinit[1]: Initializing modules necessary for the system')\\\\\\\
+_G.stdin = ''\\\\\\\
+_G.stdout = ''\\\\\\\
+_G.stderr = ''\\\\\\\
+shell.run('/usr/bin/login.lua')\\\"\",\
+}",
+  [ 27 ] = "F:startup.lua",
+  [ 28 ] = "\"-- Basically a BIOS --\\\
+\\\
+bios = {}\\\
+\\\
+craftOS_version = os.version()\\\
+\\\
+bios.version = function()\\\
+ return \\\"OCBios version 0.02\\\"\\\
+end\\\
+\\\
+-- os.version() should be redefined by your OS\\\
+os.version = function()\\\
+ return \\\"None\\\"\\\
+end\\\
+\\\
+local tBootOpts = {'/'}\\\
+local path = '/'\\\
+\\\
+local function log(msg)\\\
+ term.setTextColor(colors.white)\\\
+ write('[ ')\\\
+ term.setTextColor(colors.blue)\\\
+ write('info')\\\
+ term.setTextColor(colors.white)\\\
+ print(' ] '..msg)\\\
+ os.sleep(0.0001)\\\
+end\\\
+\\\
+local function boot(bootPath)\\\
+ local p = '/'..bootPath..'/.mbr/boot.lua'\\\
+ print('Trying to boot from '..p)\\\
+ if not fs.exists(bootPath) then\\\
+  printError('Error: No bootable medium found.')\\\
+  os.sleep(4)\\\
+  os.shutdown()\\\
+ else\\\
+  shell.run(p)\\\
+ end\\\
+end\\\
+\\\
+local function post()\\\
+ local isDisk = function(side)\\\
+  if disk.isPresent(side) then\\\
+   log('Found disk at side '..side)\\\
+   if disk.getLabel(side) ~= nil then\\\
+    log('Disk label is '..disk.getLabel(side))\\\
+   else\\\
+    log('Disk at side '..side..' has no label, setting to \\\\'drive_'..side..'\\\\'')\\\
+    disk.setLabel(side,'drive_'..side)\\\
+   end\\\
+   if disk.hasData(side) then\\\
+    log('Disk at side '..side..' contains data')\\\
+    log('Disk mount point is at '..disk.getMountPath(side))\\\
+    table.insert(tBootOpts,disk.getMountPath(side))\\\
+   end\\\
+  else\\\
+   log('No disk at side '..side)\\\
+  end\\\
+ end\\\
+ local sides = {'top','bottom','left','right','back'}\\\
+ for i=1, #sides do\\\
+  isDisk(sides[i])\\\
+  i = i + 1\\\
+ end\\\
+ log('Keyboard detected')\\\
+end\\\
+\\\
+local function menu()\\\
+ print('Disk: Path')\\\
+ for i=1, #tBootOpts do\\\
+  print(tostring(i)..': '..tBootOpts[i])\\\
+ end\\\
+ write('Choice> ')\\\
+ local opt = tonumber(read())\\\
+ local path = tBootOpts[opt]\\\
+ return path\\\
+end\\\
+\\\
+term.clear()\\\
+term.setCursorPos(1,1)\\\
+print(bios.version())\\\
+print('Press F5 for boot menu') -- fn+f5 for Mac users\\\
+post()\\\
+\\\
+local bootTimer = os.startTimer(1.5)\\\
+while true do\\\
+ local e,id = os.pullEvent()\\\
+ if e == 'timer' and id == bootTimer then\\\
+  break\\\
+ end\\\
+ if e == 'key' then\\\
+  if id == keys.f5 then\\\
+   path = menu()\\\
+   break\\\
+  end\\\
+ end\\\
+end\\\
+\\\
+boot(path)\"",
+  [ 29 ] = "D:usr",
+  [ 30 ] = "{\
+  \"D:bin\",\
+  \"{\\\
+  \\\"F:edit.lua\\\",\\\
+  \\\"\\\\\\\"-- Get file to edit\\\\\\\\\\\\\\\
+local tArgs = { ... }\\\\\\\\\\\\\\\
+if #tArgs == 0 then\\\\\\\\\\\\\\\
+    print( \\\\\\\\\\\\\\\"Usage: edit [FILE]\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+    return\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+-- Error checking\\\\\\\\\\\\\\\
+local sPath = shell.resolve( tArgs[1] )\\\\\\\\\\\\\\\
+local bReadOnly = fs.isReadOnly( sPath )\\\\\\\\\\\\\\\
+if fs.exists( sPath ) and fs.isDir( sPath ) then\\\\\\\\\\\\\\\
+    print( \\\\\\\\\\\\\\\"edit:\\\\\\\\\\\\\\\" .. tArgs[1] ..  \\\\\\\\\\\\\\\": Is a directory.\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+    return\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+-- Create .lua files by default\\\\\\\\\\\\\\\
+if not fs.exists( sPath ) and not string.find( sPath, \\\\\\\\\\\\\\\"%.\\\\\\\\\\\\\\\" ) then\\\\\\\\\\\\\\\
+    local sExtension = \\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+    if sExtension ~= \\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\" and type( sExtension ) == \\\\\\\\\\\\\\\"string\\\\\\\\\\\\\\\" then\\\\\\\\\\\\\\\
+        sPath = sPath .. \\\\\\\\\\\\\\\".\\\\\\\\\\\\\\\" .. sExtension\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local x,y = 1,1\\\\\\\\\\\\\\\
+local w,h = term.getSize()\\\\\\\\\\\\\\\
+local scrollX, scrollY = 0,0\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local tLines = {}\\\\\\\\\\\\\\\
+local bRunning = true\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+-- Colours\\\\\\\\\\\\\\\
+local highlightColour, keywordColour, commentColour, textColour, bgColour, stringColour\\\\\\\\\\\\\\\
+if term.isColour() then\\\\\\\\\\\\\\\
+    bgColour = colours.black\\\\\\\\\\\\\\\
+    textColour = colours.white\\\\\\\\\\\\\\\
+    highlightColour = colours.yellow\\\\\\\\\\\\\\\
+    keywordColour = colours.yellow\\\\\\\\\\\\\\\
+    commentColour = colours.green\\\\\\\\\\\\\\\
+    stringColour = colours.red\\\\\\\\\\\\\\\
+else\\\\\\\\\\\\\\\
+    bgColour = colours.black\\\\\\\\\\\\\\\
+    textColour = colours.white\\\\\\\\\\\\\\\
+    highlightColour = colours.white\\\\\\\\\\\\\\\
+    keywordColour = colours.white\\\\\\\\\\\\\\\
+    commentColour = colours.white\\\\\\\\\\\\\\\
+    stringColour = colours.white\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+-- Menus\\\\\\\\\\\\\\\
+local bMenu = false\\\\\\\\\\\\\\\
+local nMenuItem = 1\\\\\\\\\\\\\\\
+local tMenuItems = {}\\\\\\\\\\\\\\\
+if not bReadOnly then\\\\\\\\\\\\\\\
+    table.insert( tMenuItems, \\\\\\\\\\\\\\\"Save\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+if shell.openTab then\\\\\\\\\\\\\\\
+    table.insert( tMenuItems, \\\\\\\\\\\\\\\"Run\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+if peripheral.find( \\\\\\\\\\\\\\\"printer\\\\\\\\\\\\\\\" ) then\\\\\\\\\\\\\\\
+    table.insert( tMenuItems, \\\\\\\\\\\\\\\"Print\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+table.insert( tMenuItems, \\\\\\\\\\\\\\\"Exit\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local sStatus = \\\\\\\\\\\\\\\"Press Ctrl to access menu\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+if string.len( sStatus ) > w - 5 then\\\\\\\\\\\\\\\
+    sStatus = \\\\\\\\\\\\\\\"Press Ctrl for menu\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function load( _sPath )\\\\\\\\\\\\\\\
+    tLines = {}\\\\\\\\\\\\\\\
+    if fs.exists( _sPath ) then\\\\\\\\\\\\\\\
+        local file = io.open( _sPath, \\\\\\\\\\\\\\\"r\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+        local sLine = file:read()\\\\\\\\\\\\\\\
+        while sLine do\\\\\\\\\\\\\\\
+            table.insert( tLines, sLine )\\\\\\\\\\\\\\\
+            sLine = file:read()\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+        file:close()\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    if #tLines == 0 then\\\\\\\\\\\\\\\
+        table.insert( tLines, \\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function save( _sPath )\\\\\\\\\\\\\\\
+    -- Create intervening folder\\\\\\\\\\\\\\\
+    local sDir = _sPath:sub(1, _sPath:len() - fs.getName(_sPath):len() )\\\\\\\\\\\\\\\
+    if not fs.exists( sDir ) then\\\\\\\\\\\\\\\
+        fs.makeDir( sDir )\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    -- Save\\\\\\\\\\\\\\\
+    local file, fileerr\\\\\\\\\\\\\\\
+    local function innerSave()\\\\\\\\\\\\\\\
+        file, fileerr = fs.open( _sPath, \\\\\\\\\\\\\\\"w\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+        if file then\\\\\\\\\\\\\\\
+            for n, sLine in ipairs( tLines ) do\\\\\\\\\\\\\\\
+                file.write( sLine .. \\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+        else\\\\\\\\\\\\\\\
+            error( \\\\\\\\\\\\\\\"Failed to open \\\\\\\\\\\\\\\".._sPath )\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    local ok, err = pcall( innerSave )\\\\\\\\\\\\\\\
+    if file then\\\\\\\\\\\\\\\
+        file.close()\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+    return ok, err, fileerr\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local tKeywords = {\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"and\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"break\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"do\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"else\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"elseif\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"end\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"false\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"for\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"function\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"if\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"in\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"local\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"nil\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"not\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"or\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"repeat\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"return\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"then\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"true\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"until\\\\\\\\\\\\\\\"]= true,\\\\\\\\\\\\\\\
+    [\\\\\\\\\\\\\\\"while\\\\\\\\\\\\\\\"] = true,\\\\\\\\\\\\\\\
+}\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function tryWrite( sLine, regex, colour )\\\\\\\\\\\\\\\
+    local match = string.match( sLine, regex )\\\\\\\\\\\\\\\
+    if match then\\\\\\\\\\\\\\\
+        if type(colour) == \\\\\\\\\\\\\\\"number\\\\\\\\\\\\\\\" then\\\\\\\\\\\\\\\
+            term.setTextColour( colour )\\\\\\\\\\\\\\\
+        else\\\\\\\\\\\\\\\
+            term.setTextColour( colour(match) )\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+        term.write( match )\\\\\\\\\\\\\\\
+        term.setTextColour( textColour )\\\\\\\\\\\\\\\
+        return string.sub( sLine, string.len(match) + 1 )\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+    return nil\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function writeHighlighted( sLine )\\\\\\\\\\\\\\\
+    while string.len(sLine) > 0 do\\\\\\\\\\\\\\\
+        sLine =\\\\\\\\\\\\\\\
+            tryWrite( sLine, \\\\\\\\\\\\\\\"^%-%-%[%[.-%]%]\\\\\\\\\\\\\\\", commentColour ) or\\\\\\\\\\\\\\\
+            tryWrite( sLine, \\\\\\\\\\\\\\\"^%-%-.*\\\\\\\\\\\\\\\", commentColour ) or\\\\\\\\\\\\\\\
+            tryWrite( sLine, \\\\\\\\\\\\\\\"^\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\", stringColour ) or\\\\\\\\\\\\\\\
+            tryWrite( sLine, \\\\\\\\\\\\\\\"^\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\".-[^\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\]\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\", stringColour ) or\\\\\\\\\\\\\\\
+            tryWrite( sLine, \\\\\\\\\\\\\\\"^\\\\\\\\\\\\\\\\'\\\\\\\\\\\\\\\\'\\\\\\\\\\\\\\\", stringColour ) or\\\\\\\\\\\\\\\
+            tryWrite( sLine, \\\\\\\\\\\\\\\"^\\\\\\\\\\\\\\\\'.-[^\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\]\\\\\\\\\\\\\\\\'\\\\\\\\\\\\\\\", stringColour ) or\\\\\\\\\\\\\\\
+            tryWrite( sLine, \\\\\\\\\\\\\\\"^%[%[.-%]%]\\\\\\\\\\\\\\\", stringColour ) or\\\\\\\\\\\\\\\
+            tryWrite( sLine, \\\\\\\\\\\\\\\"^[%w_]+\\\\\\\\\\\\\\\", function( match )\\\\\\\\\\\\\\\
+                if tKeywords[ match ] then\\\\\\\\\\\\\\\
+                    return keywordColour\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+                return textColour\\\\\\\\\\\\\\\
+            end ) or\\\\\\\\\\\\\\\
+            tryWrite( sLine, \\\\\\\\\\\\\\\"^[^%w_]\\\\\\\\\\\\\\\", textColour )\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local tCompletions\\\\\\\\\\\\\\\
+local nCompletion\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local tCompleteEnv = _ENV\\\\\\\\\\\\\\\
+local function complete( sLine )\\\\\\\\\\\\\\\
+    if settings.get( \\\\\\\\\\\\\\\"edit.autocomplete\\\\\\\\\\\\\\\" ) then\\\\\\\\\\\\\\\
+        local nStartPos = string.find( sLine, \\\\\\\\\\\\\\\"[a-zA-Z0-9_%.:]+$\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+        if nStartPos then\\\\\\\\\\\\\\\
+            sLine = string.sub( sLine, nStartPos )\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+        if #sLine > 0 then\\\\\\\\\\\\\\\
+            return textutils.complete( sLine, tCompleteEnv )\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+    return nil\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function recomplete()\\\\\\\\\\\\\\\
+    local sLine = tLines[y]\\\\\\\\\\\\\\\
+    if not bMenu and not bReadOnly and x == string.len(sLine) + 1 then\\\\\\\\\\\\\\\
+        tCompletions = complete( sLine )\\\\\\\\\\\\\\\
+        if tCompletions and #tCompletions > 0 then\\\\\\\\\\\\\\\
+            nCompletion = 1\\\\\\\\\\\\\\\
+        else\\\\\\\\\\\\\\\
+            nCompletion = nil\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+    else\\\\\\\\\\\\\\\
+        tCompletions = nil\\\\\\\\\\\\\\\
+        nCompletion = nil\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function writeCompletion( sLine )\\\\\\\\\\\\\\\
+    if nCompletion then\\\\\\\\\\\\\\\
+        local sCompletion = tCompletions[ nCompletion ]\\\\\\\\\\\\\\\
+        term.setTextColor( colours.white )\\\\\\\\\\\\\\\
+        term.setBackgroundColor( colours.grey )\\\\\\\\\\\\\\\
+        term.write( sCompletion )\\\\\\\\\\\\\\\
+        term.setTextColor( textColour )\\\\\\\\\\\\\\\
+        term.setBackgroundColor( bgColour )\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function redrawText()\\\\\\\\\\\\\\\
+    local cursorX, cursorY = x, y\\\\\\\\\\\\\\\
+    for y=1,h-1 do\\\\\\\\\\\\\\\
+        term.setCursorPos( 1 - scrollX, y )\\\\\\\\\\\\\\\
+        term.clearLine()\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        local sLine = tLines[ y + scrollY ]\\\\\\\\\\\\\\\
+        if sLine ~= nil then\\\\\\\\\\\\\\\
+            writeHighlighted( sLine )\\\\\\\\\\\\\\\
+            if cursorY == y and cursorX == #sLine + 1 then\\\\\\\\\\\\\\\
+                writeCompletion()\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+    term.setCursorPos( x - scrollX, y - scrollY )\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function redrawLine(_nY)\\\\\\\\\\\\\\\
+    local sLine = tLines[_nY]\\\\\\\\\\\\\\\
+    if sLine then\\\\\\\\\\\\\\\
+        term.setCursorPos( 1 - scrollX, _nY - scrollY )\\\\\\\\\\\\\\\
+        term.clearLine()\\\\\\\\\\\\\\\
+        writeHighlighted( sLine )\\\\\\\\\\\\\\\
+        if _nY == y and x == #sLine + 1 then\\\\\\\\\\\\\\\
+            writeCompletion()\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+        term.setCursorPos( x - scrollX, _nY - scrollY )\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function redrawMenu()\\\\\\\\\\\\\\\
+    -- Clear line\\\\\\\\\\\\\\\
+    term.setCursorPos( 1, h )\\\\\\\\\\\\\\\
+    term.clearLine()\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    -- Draw line numbers\\\\\\\\\\\\\\\
+    term.setCursorPos( w - string.len( \\\\\\\\\\\\\\\"Ln \\\\\\\\\\\\\\\"..y ) + 1, h )\\\\\\\\\\\\\\\
+    term.setTextColour( highlightColour )\\\\\\\\\\\\\\\
+    term.write( \\\\\\\\\\\\\\\"Ln \\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+    term.setTextColour( textColour )\\\\\\\\\\\\\\\
+    term.write( y )\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    term.setCursorPos( 1, h )\\\\\\\\\\\\\\\
+    if bMenu then\\\\\\\\\\\\\\\
+        -- Draw menu\\\\\\\\\\\\\\\
+        term.setTextColour( textColour )\\\\\\\\\\\\\\\
+        for nItem,sItem in pairs( tMenuItems ) do\\\\\\\\\\\\\\\
+            if nItem == nMenuItem then\\\\\\\\\\\\\\\
+                term.setTextColour( highlightColour )\\\\\\\\\\\\\\\
+                term.write( \\\\\\\\\\\\\\\"[\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+                term.setTextColour( textColour )\\\\\\\\\\\\\\\
+                term.write( sItem )\\\\\\\\\\\\\\\
+                term.setTextColour( highlightColour )\\\\\\\\\\\\\\\
+                term.write( \\\\\\\\\\\\\\\"]\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+                term.setTextColour( textColour )\\\\\\\\\\\\\\\
+            else\\\\\\\\\\\\\\\
+                term.write( \\\\\\\\\\\\\\\" \\\\\\\\\\\\\\\"..sItem..\\\\\\\\\\\\\\\" \\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+    else\\\\\\\\\\\\\\\
+        -- Draw status\\\\\\\\\\\\\\\
+        term.setTextColour( highlightColour )\\\\\\\\\\\\\\\
+        term.write( sStatus )\\\\\\\\\\\\\\\
+        term.setTextColour( textColour )\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    -- Reset cursor\\\\\\\\\\\\\\\
+    term.setCursorPos( x - scrollX, y - scrollY )\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local tMenuFuncs = {\\\\\\\\\\\\\\\
+    Save = function()\\\\\\\\\\\\\\\
+        if bReadOnly then\\\\\\\\\\\\\\\
+            sStatus = \\\\\\\\\\\\\\\"Access denied\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+        else\\\\\\\\\\\\\\\
+            local ok, err, fileerr  = save( sPath )\\\\\\\\\\\\\\\
+            if ok then\\\\\\\\\\\\\\\
+                sStatus=\\\\\\\\\\\\\\\"Saved to \\\\\\\\\\\\\\\"..sPath\\\\\\\\\\\\\\\
+            else\\\\\\\\\\\\\\\
+                if fileerr then\\\\\\\\\\\\\\\
+                    sStatus=\\\\\\\\\\\\\\\"Error saving to \\\\\\\\\\\\\\\"..fileerr\\\\\\\\\\\\\\\
+                else\\\\\\\\\\\\\\\
+                    sStatus=\\\\\\\\\\\\\\\"Error saving to \\\\\\\\\\\\\\\"..sPath\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+        redrawMenu()\\\\\\\\\\\\\\\
+    end,\\\\\\\\\\\\\\\
+    Print = function()\\\\\\\\\\\\\\\
+        local printer = peripheral.find( \\\\\\\\\\\\\\\"printer\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+        if not printer then\\\\\\\\\\\\\\\
+            sStatus = \\\\\\\\\\\\\\\"No printer attached\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+            return\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        local nPage = 0\\\\\\\\\\\\\\\
+        local sName = fs.getName( sPath )\\\\\\\\\\\\\\\
+        if printer.getInkLevel() < 1 then\\\\\\\\\\\\\\\
+            sStatus = \\\\\\\\\\\\\\\"Printer out of ink\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+            return\\\\\\\\\\\\\\\
+        elseif printer.getPaperLevel() < 1 then\\\\\\\\\\\\\\\
+            sStatus = \\\\\\\\\\\\\\\"Printer out of paper\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+            return\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        local screenTerminal = term.current()\\\\\\\\\\\\\\\
+        local printerTerminal = {\\\\\\\\\\\\\\\
+            getCursorPos = printer.getCursorPos,\\\\\\\\\\\\\\\
+            setCursorPos = printer.setCursorPos,\\\\\\\\\\\\\\\
+            getSize = printer.getPageSize,\\\\\\\\\\\\\\\
+            write = printer.write,\\\\\\\\\\\\\\\
+        }\\\\\\\\\\\\\\\
+        printerTerminal.scroll = function()\\\\\\\\\\\\\\\
+            if nPage == 1 then\\\\\\\\\\\\\\\
+                printer.setPageTitle( sName..\\\\\\\\\\\\\\\" (page \\\\\\\\\\\\\\\"..nPage..\\\\\\\\\\\\\\\")\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+            while not printer.newPage()    do\\\\\\\\\\\\\\\
+                if printer.getInkLevel() < 1 then\\\\\\\\\\\\\\\
+                    sStatus = \\\\\\\\\\\\\\\"Printer out of ink, please refill\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+                elseif printer.getPaperLevel() < 1 then\\\\\\\\\\\\\\\
+                    sStatus = \\\\\\\\\\\\\\\"Printer out of paper, please refill\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+                else\\\\\\\\\\\\\\\
+                    sStatus = \\\\\\\\\\\\\\\"Printer output tray full, please empty\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+                term.redirect( screenTerminal )\\\\\\\\\\\\\\\
+                redrawMenu()\\\\\\\\\\\\\\\
+                term.redirect( printerTerminal )\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+                local timer = os.startTimer(0.5)\\\\\\\\\\\\\\\
+                sleep(0.5)\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+            nPage = nPage + 1\\\\\\\\\\\\\\\
+            if nPage == 1 then\\\\\\\\\\\\\\\
+                printer.setPageTitle( sName )\\\\\\\\\\\\\\\
+            else\\\\\\\\\\\\\\\
+                printer.setPageTitle( sName..\\\\\\\\\\\\\\\" (page \\\\\\\\\\\\\\\"..nPage..\\\\\\\\\\\\\\\")\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        bMenu = false\\\\\\\\\\\\\\\
+        term.redirect( printerTerminal )\\\\\\\\\\\\\\\
+        local ok, error = pcall( function()\\\\\\\\\\\\\\\
+            term.scroll()\\\\\\\\\\\\\\\
+            for n, sLine in ipairs( tLines ) do\\\\\\\\\\\\\\\
+                print( sLine )\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+        end )\\\\\\\\\\\\\\\
+        term.redirect( screenTerminal )\\\\\\\\\\\\\\\
+        if not ok then\\\\\\\\\\\\\\\
+            print( error )\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        while not printer.endPage() do\\\\\\\\\\\\\\\
+            sStatus = \\\\\\\\\\\\\\\"Printer output tray full, please empty\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+            redrawMenu()\\\\\\\\\\\\\\\
+            sleep( 0.5 )\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+        bMenu = true\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        if nPage > 1 then\\\\\\\\\\\\\\\
+            sStatus = \\\\\\\\\\\\\\\"Printed \\\\\\\\\\\\\\\"..nPage..\\\\\\\\\\\\\\\" Pages\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+        else\\\\\\\\\\\\\\\
+            sStatus = \\\\\\\\\\\\\\\"Printed 1 Page\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+        redrawMenu()\\\\\\\\\\\\\\\
+    end,\\\\\\\\\\\\\\\
+    Exit = function()\\\\\\\\\\\\\\\
+        bRunning = false\\\\\\\\\\\\\\\
+    end,\\\\\\\\\\\\\\\
+    Run = function()\\\\\\\\\\\\\\\
+        local sTempPath = \\\\\\\\\\\\\\\"/.temp\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+        local ok, err = save( sTempPath )\\\\\\\\\\\\\\\
+        if ok then\\\\\\\\\\\\\\\
+            local nTask = shell.openTab( sTempPath )\\\\\\\\\\\\\\\
+            if nTask then\\\\\\\\\\\\\\\
+                shell.switchTab( nTask )\\\\\\\\\\\\\\\
+            else\\\\\\\\\\\\\\\
+                sStatus=\\\\\\\\\\\\\\\"Error starting Task\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+            fs.delete( sTempPath )\\\\\\\\\\\\\\\
+        else\\\\\\\\\\\\\\\
+            sStatus=\\\\\\\\\\\\\\\"Error saving to \\\\\\\\\\\\\\\"..sTempPath\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+        redrawMenu()\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+}\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function doMenuItem( _n )\\\\\\\\\\\\\\\
+    tMenuFuncs[tMenuItems[_n]]()\\\\\\\\\\\\\\\
+    if bMenu then\\\\\\\\\\\\\\\
+        bMenu = false\\\\\\\\\\\\\\\
+        term.setCursorBlink( true )\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+    redrawMenu()\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function setCursor( newX, newY )\\\\\\\\\\\\\\\
+    local oldX, oldY = x, y\\\\\\\\\\\\\\\
+    x, y = newX, newY\\\\\\\\\\\\\\\
+    local screenX = x - scrollX\\\\\\\\\\\\\\\
+    local screenY = y - scrollY\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    local bRedraw = false\\\\\\\\\\\\\\\
+    if screenX < 1 then\\\\\\\\\\\\\\\
+        scrollX = x - 1\\\\\\\\\\\\\\\
+        screenX = 1\\\\\\\\\\\\\\\
+        bRedraw = true\\\\\\\\\\\\\\\
+    elseif screenX > w then\\\\\\\\\\\\\\\
+        scrollX = x - w\\\\\\\\\\\\\\\
+        screenX = w\\\\\\\\\\\\\\\
+        bRedraw = true\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    if screenY < 1 then\\\\\\\\\\\\\\\
+        scrollY = y - 1\\\\\\\\\\\\\\\
+        screenY = 1\\\\\\\\\\\\\\\
+        bRedraw = true\\\\\\\\\\\\\\\
+    elseif screenY > h-1 then\\\\\\\\\\\\\\\
+        scrollY = y - (h-1)\\\\\\\\\\\\\\\
+        screenY = h-1\\\\\\\\\\\\\\\
+        bRedraw = true\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    recomplete()\\\\\\\\\\\\\\\
+    if bRedraw then\\\\\\\\\\\\\\\
+        redrawText()\\\\\\\\\\\\\\\
+    elseif y ~= oldY then\\\\\\\\\\\\\\\
+        redrawLine( oldY )\\\\\\\\\\\\\\\
+        redrawLine( y )\\\\\\\\\\\\\\\
+    else\\\\\\\\\\\\\\\
+        redrawLine( y )\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+    term.setCursorPos( screenX, screenY )\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    redrawMenu()\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+-- Actual program functionality begins\\\\\\\\\\\\\\\
+load(sPath)\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+term.setBackgroundColour( bgColour )\\\\\\\\\\\\\\\
+term.clear()\\\\\\\\\\\\\\\
+term.setCursorPos(x,y)\\\\\\\\\\\\\\\
+term.setCursorBlink( true )\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+recomplete()\\\\\\\\\\\\\\\
+redrawText()\\\\\\\\\\\\\\\
+redrawMenu()\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function acceptCompletion()\\\\\\\\\\\\\\\
+    if nCompletion then\\\\\\\\\\\\\\\
+        -- Append the completion\\\\\\\\\\\\\\\
+        local sCompletion = tCompletions[ nCompletion ]\\\\\\\\\\\\\\\
+        tLines[y] = tLines[y] .. sCompletion\\\\\\\\\\\\\\\
+        setCursor( x + string.len( sCompletion ), y )\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+-- Handle input\\\\\\\\\\\\\\\
+while bRunning do\\\\\\\\\\\\\\\
+    local sEvent, param, param2, param3 = os.pullEvent()\\\\\\\\\\\\\\\
+    if sEvent == \\\\\\\\\\\\\\\"key\\\\\\\\\\\\\\\" then\\\\\\\\\\\\\\\
+        local oldX, oldY = x, y\\\\\\\\\\\\\\\
+        if param == keys.up then\\\\\\\\\\\\\\\
+            -- Up\\\\\\\\\\\\\\\
+            if not bMenu then\\\\\\\\\\\\\\\
+                if nCompletion then\\\\\\\\\\\\\\\
+                    -- Cycle completions\\\\\\\\\\\\\\\
+                    nCompletion = nCompletion - 1\\\\\\\\\\\\\\\
+                    if nCompletion < 1 then\\\\\\\\\\\\\\\
+                        nCompletion = #tCompletions\\\\\\\\\\\\\\\
+                    end\\\\\\\\\\\\\\\
+                    redrawLine(y)\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+                elseif y > 1 then\\\\\\\\\\\\\\\
+                    -- Move cursor up\\\\\\\\\\\\\\\
+                    setCursor(\\\\\\\\\\\\\\\
+                        math.min( x, string.len( tLines[y - 1] ) + 1 ),\\\\\\\\\\\\\\\
+                        y - 1\\\\\\\\\\\\\\\
+                    )\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys.down then\\\\\\\\\\\\\\\
+            -- Down\\\\\\\\\\\\\\\
+            if not bMenu then\\\\\\\\\\\\\\\
+                -- Move cursor down\\\\\\\\\\\\\\\
+                if nCompletion then\\\\\\\\\\\\\\\
+                    -- Cycle completions\\\\\\\\\\\\\\\
+                    nCompletion = nCompletion + 1\\\\\\\\\\\\\\\
+                    if nCompletion > #tCompletions then\\\\\\\\\\\\\\\
+                        nCompletion = 1\\\\\\\\\\\\\\\
+                    end\\\\\\\\\\\\\\\
+                    redrawLine(y)\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+                elseif y < #tLines then\\\\\\\\\\\\\\\
+                    -- Move cursor down\\\\\\\\\\\\\\\
+                    setCursor(\\\\\\\\\\\\\\\
+                        math.min( x, string.len( tLines[y + 1] ) + 1 ),\\\\\\\\\\\\\\\
+                        y + 1\\\\\\\\\\\\\\\
+                    )\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys.tab then\\\\\\\\\\\\\\\
+            -- Tab\\\\\\\\\\\\\\\
+            if not bMenu and not bReadOnly then\\\\\\\\\\\\\\\
+                if nCompletion and x == string.len(tLines[y]) + 1 then\\\\\\\\\\\\\\\
+                    -- Accept autocomplete\\\\\\\\\\\\\\\
+                    acceptCompletion()\\\\\\\\\\\\\\\
+                else\\\\\\\\\\\\\\\
+                    -- Indent line\\\\\\\\\\\\\\\
+                    local sLine = tLines[y]\\\\\\\\\\\\\\\
+                    tLines[y] = string.sub(sLine,1,x-1) .. \\\\\\\\\\\\\\\"    \\\\\\\\\\\\\\\" .. string.sub(sLine,x)\\\\\\\\\\\\\\\
+                    setCursor( x + 4, y )\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys.pageUp then\\\\\\\\\\\\\\\
+            -- Page Up\\\\\\\\\\\\\\\
+            if not bMenu then\\\\\\\\\\\\\\\
+                -- Move up a page\\\\\\\\\\\\\\\
+                local newY\\\\\\\\\\\\\\\
+                if y - (h - 1) >= 1 then\\\\\\\\\\\\\\\
+                    newY = y - (h - 1)\\\\\\\\\\\\\\\
+                else\\\\\\\\\\\\\\\
+                    newY = 1\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+                setCursor(\\\\\\\\\\\\\\\
+                    math.min( x, string.len( tLines[newY] ) + 1 ),\\\\\\\\\\\\\\\
+                    newY\\\\\\\\\\\\\\\
+                )\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys.pageDown then\\\\\\\\\\\\\\\
+            -- Page Down\\\\\\\\\\\\\\\
+            if not bMenu then\\\\\\\\\\\\\\\
+                -- Move down a page\\\\\\\\\\\\\\\
+                local newY\\\\\\\\\\\\\\\
+                if y + (h - 1) <= #tLines then\\\\\\\\\\\\\\\
+                    newY = y + (h - 1)\\\\\\\\\\\\\\\
+                else\\\\\\\\\\\\\\\
+                    newY = #tLines\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+                local newX = math.min( x, string.len( tLines[newY] ) + 1 )\\\\\\\\\\\\\\\
+                setCursor( newX, newY )\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys.home then\\\\\\\\\\\\\\\
+            -- Home\\\\\\\\\\\\\\\
+            if not bMenu then\\\\\\\\\\\\\\\
+                -- Move cursor to the beginning\\\\\\\\\\\\\\\
+                if x > 1 then\\\\\\\\\\\\\\\
+                    setCursor(1,y)\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys[\\\\\\\\\\\\\\\"end\\\\\\\\\\\\\\\"] then\\\\\\\\\\\\\\\
+            -- End\\\\\\\\\\\\\\\
+            if not bMenu then\\\\\\\\\\\\\\\
+                -- Move cursor to the end\\\\\\\\\\\\\\\
+                local nLimit = string.len( tLines[y] ) + 1\\\\\\\\\\\\\\\
+                if x < nLimit then\\\\\\\\\\\\\\\
+                    setCursor( nLimit, y )\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys.left then\\\\\\\\\\\\\\\
+            -- Left\\\\\\\\\\\\\\\
+            if not bMenu then\\\\\\\\\\\\\\\
+                if x > 1 then\\\\\\\\\\\\\\\
+                    -- Move cursor left\\\\\\\\\\\\\\\
+                    setCursor( x - 1, y )\\\\\\\\\\\\\\\
+                elseif x==1 and y>1 then\\\\\\\\\\\\\\\
+                    setCursor( string.len( tLines[y-1] ) + 1, y - 1 )\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            else\\\\\\\\\\\\\\\
+                -- Move menu left\\\\\\\\\\\\\\\
+                nMenuItem = nMenuItem - 1\\\\\\\\\\\\\\\
+                if nMenuItem < 1 then\\\\\\\\\\\\\\\
+                    nMenuItem = #tMenuItems\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+                redrawMenu()\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys.right then\\\\\\\\\\\\\\\
+            -- Right\\\\\\\\\\\\\\\
+            if not bMenu then\\\\\\\\\\\\\\\
+                local nLimit = string.len( tLines[y] ) + 1\\\\\\\\\\\\\\\
+                if x < nLimit then\\\\\\\\\\\\\\\
+                    -- Move cursor right\\\\\\\\\\\\\\\
+                    setCursor( x + 1, y )\\\\\\\\\\\\\\\
+                elseif nCompletion and x == string.len(tLines[y]) + 1 then\\\\\\\\\\\\\\\
+                    -- Accept autocomplete\\\\\\\\\\\\\\\
+                    acceptCompletion()\\\\\\\\\\\\\\\
+                elseif x==nLimit and y<#tLines then\\\\\\\\\\\\\\\
+                    -- Go to next line\\\\\\\\\\\\\\\
+                    setCursor( 1, y + 1 )\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            else\\\\\\\\\\\\\\\
+                -- Move menu right\\\\\\\\\\\\\\\
+                nMenuItem = nMenuItem + 1\\\\\\\\\\\\\\\
+                if nMenuItem > #tMenuItems then\\\\\\\\\\\\\\\
+                    nMenuItem = 1\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+                redrawMenu()\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys.delete then\\\\\\\\\\\\\\\
+            -- Delete\\\\\\\\\\\\\\\
+            if not bMenu and not bReadOnly then\\\\\\\\\\\\\\\
+                local nLimit = string.len( tLines[y] ) + 1\\\\\\\\\\\\\\\
+                if x < nLimit then\\\\\\\\\\\\\\\
+                    local sLine = tLines[y]\\\\\\\\\\\\\\\
+                    tLines[y] = string.sub(sLine,1,x-1) .. string.sub(sLine,x+1)\\\\\\\\\\\\\\\
+                    recomplete()\\\\\\\\\\\\\\\
+                    redrawLine(y)\\\\\\\\\\\\\\\
+                elseif y<#tLines then\\\\\\\\\\\\\\\
+                    tLines[y] = tLines[y] .. tLines[y+1]\\\\\\\\\\\\\\\
+                    table.remove( tLines, y+1 )\\\\\\\\\\\\\\\
+                    recomplete()\\\\\\\\\\\\\\\
+                    redrawText()\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys.backspace then\\\\\\\\\\\\\\\
+            -- Backspace\\\\\\\\\\\\\\\
+            if not bMenu and not bReadOnly then\\\\\\\\\\\\\\\
+                if x > 1 then\\\\\\\\\\\\\\\
+                    -- Remove character\\\\\\\\\\\\\\\
+                    local sLine = tLines[y]\\\\\\\\\\\\\\\
+                    if x > 4 and string.sub(sLine,x-4,x-1) == \\\\\\\\\\\\\\\"    \\\\\\\\\\\\\\\" and not string.sub(sLine, 1, x - 1):find(\\\\\\\\\\\\\\\"%S\\\\\\\\\\\\\\\") then\\\\\\\\\\\\\\\
+                        tLines[y] = string.sub(sLine,1,x-5) .. string.sub(sLine,x)\\\\\\\\\\\\\\\
+                        setCursor( x - 4, y )\\\\\\\\\\\\\\\
+                    else\\\\\\\\\\\\\\\
+                        tLines[y] = string.sub(sLine,1,x-2) .. string.sub(sLine,x)\\\\\\\\\\\\\\\
+                        setCursor( x - 1, y )\\\\\\\\\\\\\\\
+                    end\\\\\\\\\\\\\\\
+                elseif y > 1 then\\\\\\\\\\\\\\\
+                    -- Remove newline\\\\\\\\\\\\\\\
+                    local sPrevLen = string.len( tLines[y-1] )\\\\\\\\\\\\\\\
+                    tLines[y-1] = tLines[y-1] .. tLines[y]\\\\\\\\\\\\\\\
+                    table.remove( tLines, y )\\\\\\\\\\\\\\\
+                    setCursor( sPrevLen + 1, y - 1 )\\\\\\\\\\\\\\\
+                    redrawText()\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys.enter then\\\\\\\\\\\\\\\
+            -- Enter\\\\\\\\\\\\\\\
+            if not bMenu and not bReadOnly then\\\\\\\\\\\\\\\
+                -- Newline\\\\\\\\\\\\\\\
+                local sLine = tLines[y]\\\\\\\\\\\\\\\
+                local _,spaces=string.find(sLine,\\\\\\\\\\\\\\\"^[ ]+\\\\\\\\\\\\\\\")\\\\\\\\\\\\\\\
+                if not spaces then\\\\\\\\\\\\\\\
+                    spaces=0\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+                tLines[y] = string.sub(sLine,1,x-1)\\\\\\\\\\\\\\\
+                table.insert( tLines, y+1, string.rep(' ',spaces)..string.sub(sLine,x) )\\\\\\\\\\\\\\\
+                setCursor( spaces + 1, y + 1 )\\\\\\\\\\\\\\\
+                redrawText()\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+            elseif bMenu then\\\\\\\\\\\\\\\
+                -- Menu selection\\\\\\\\\\\\\\\
+                doMenuItem( nMenuItem )\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif param == keys.leftCtrl or param == keys.rightCtrl or param == keys.rightAlt then\\\\\\\\\\\\\\\
+            -- Menu toggle\\\\\\\\\\\\\\\
+            bMenu = not bMenu\\\\\\\\\\\\\\\
+            if bMenu then\\\\\\\\\\\\\\\
+                term.setCursorBlink( false )\\\\\\\\\\\\\\\
+            else\\\\\\\\\\\\\\\
+                term.setCursorBlink( true )\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+            redrawMenu()\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    elseif sEvent == \\\\\\\\\\\\\\\"char\\\\\\\\\\\\\\\" then\\\\\\\\\\\\\\\
+        if not bMenu and not bReadOnly then\\\\\\\\\\\\\\\
+            -- Input text\\\\\\\\\\\\\\\
+            local sLine = tLines[y]\\\\\\\\\\\\\\\
+            tLines[y] = string.sub(sLine,1,x-1) .. param .. string.sub(sLine,x)\\\\\\\\\\\\\\\
+            setCursor( x + 1, y )\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+        elseif bMenu then\\\\\\\\\\\\\\\
+            -- Select menu items\\\\\\\\\\\\\\\
+            for n,sMenuItem in ipairs( tMenuItems ) do\\\\\\\\\\\\\\\
+                if string.lower(string.sub(sMenuItem,1,1)) == string.lower(param) then\\\\\\\\\\\\\\\
+                    doMenuItem( n )\\\\\\\\\\\\\\\
+                    break\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    elseif sEvent == \\\\\\\\\\\\\\\"paste\\\\\\\\\\\\\\\" then\\\\\\\\\\\\\\\
+        if not bReadOnly then\\\\\\\\\\\\\\\
+            -- Close menu if open\\\\\\\\\\\\\\\
+            if bMenu then\\\\\\\\\\\\\\\
+                bMenu = false\\\\\\\\\\\\\\\
+                term.setCursorBlink( true )\\\\\\\\\\\\\\\
+                redrawMenu()\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+            -- Input text\\\\\\\\\\\\\\\
+            local sLine = tLines[y]\\\\\\\\\\\\\\\
+            tLines[y] = string.sub(sLine,1,x-1) .. param .. string.sub(sLine,x)\\\\\\\\\\\\\\\
+            setCursor( x + string.len( param ), y )\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    elseif sEvent == \\\\\\\\\\\\\\\"mouse_click\\\\\\\\\\\\\\\" then\\\\\\\\\\\\\\\
+        if not bMenu then\\\\\\\\\\\\\\\
+            if param == 1 then\\\\\\\\\\\\\\\
+                -- Left click\\\\\\\\\\\\\\\
+                local cx,cy = param2, param3\\\\\\\\\\\\\\\
+                if cy < h then\\\\\\\\\\\\\\\
+                    local newY = math.min( math.max( scrollY + cy, 1 ), #tLines )\\\\\\\\\\\\\\\
+                    local newX = math.min( math.max( scrollX + cx, 1 ), string.len( tLines[newY] ) + 1 )\\\\\\\\\\\\\\\
+                    setCursor( newX, newY )\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    elseif sEvent == \\\\\\\\\\\\\\\"mouse_scroll\\\\\\\\\\\\\\\" then\\\\\\\\\\\\\\\
+        if not bMenu then\\\\\\\\\\\\\\\
+            if param == -1 then\\\\\\\\\\\\\\\
+                -- Scroll up\\\\\\\\\\\\\\\
+                if scrollY > 0 then\\\\\\\\\\\\\\\
+                    -- Move cursor up\\\\\\\\\\\\\\\
+                    scrollY = scrollY - 1\\\\\\\\\\\\\\\
+                    redrawText()\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+            elseif param == 1 then\\\\\\\\\\\\\\\
+                -- Scroll down\\\\\\\\\\\\\\\
+                local nMaxScroll = #tLines - (h-1)\\\\\\\\\\\\\\\
+                if scrollY < nMaxScroll then\\\\\\\\\\\\\\\
+                    -- Move cursor down\\\\\\\\\\\\\\\
+                    scrollY = scrollY + 1\\\\\\\\\\\\\\\
+                    redrawText()\\\\\\\\\\\\\\\
+                end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+            end\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    elseif sEvent == \\\\\\\\\\\\\\\"term_resize\\\\\\\\\\\\\\\" then\\\\\\\\\\\\\\\
+        w,h = term.getSize()\\\\\\\\\\\\\\\
+        setCursor( x, y )\\\\\\\\\\\\\\\
+        redrawMenu()\\\\\\\\\\\\\\\
+        redrawText()\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+-- Cleanup\\\\\\\\\\\\\\\
+term.clear()\\\\\\\\\\\\\\\
+term.setCursorBlink( false )\\\\\\\\\\\\\\\
+term.setCursorPos( 1, 1 )\\\\\\\"\\\",\\\
+  \\\"F:login.lua\\\",\\\
+  \\\"\\\\\\\"-- Login script. Self-explanatory :) --\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+_G.users = {}\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local old = os.pullEvent \\\\\\\\\\\\\\\
+os.pullEvent = os.pullEventRaw \\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local file = fs.open('/etc/users','r')\\\\\\\\\\\\\\\
+while true do\\\\\\\\\\\\\\\
+ local usr = file.readLine()\\\\\\\\\\\\\\\
+ if usr ~= nil then\\\\\\\\\\\\\\\
+  table.insert(users,usr)\\\\\\\\\\\\\\\
+ else\\\\\\\\\\\\\\\
+  break\\\\\\\\\\\\\\\
+ end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+file.close()\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local passwords = {}\\\\\\\\\\\\\\\
+local encrypted = {}\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+os.loadAPI('/usr/lib/hash.lua')\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local file = fs.open('/etc/passwd','r')\\\\\\\\\\\\\\\
+while true do\\\\\\\\\\\\\\\
+ local line = file.readLine()\\\\\\\\\\\\\\\
+ if line ~= nil then\\\\\\\\\\\\\\\
+  table.insert(encrypted,line)\\\\\\\\\\\\\\\
+ else\\\\\\\\\\\\\\\
+  break\\\\\\\\\\\\\\\
+ end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+for i=1, #encrypted do\\\\\\\\\\\\\\\
+ table.insert(passwords,hash.decrypt(encrypted[i]))\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function password()\\\\\\\\\\\\\\\
+ write('Password: ')\\\\\\\\\\\\\\\
+ local pass = read('*')\\\\\\\\\\\\\\\
+ return pass\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function user()\\\\\\\\\\\\\\\
+ write(_HOSTNAME..' login: ')\\\\\\\\\\\\\\\
+ local user = read()\\\\\\\\\\\\\\\
+ return user\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local function detectUser(u)\\\\\\\\\\\\\\\
+ for i=1, #users do\\\\\\\\\\\\\\\
+  if users[i] == u then\\\\\\\\\\\\\\\
+   return i \\\\\\\\\\\\\\\
+  end\\\\\\\\\\\\\\\
+  i = i + 1\\\\\\\\\\\\\\\
+ end\\\\\\\\\\\\\\\
+ return nil\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+while true do\\\\\\\\\\\\\\\
+ term.clear()\\\\\\\\\\\\\\\
+ term.setCursorPos(1,2)\\\\\\\\\\\\\\\
+ local loginUser = user()\\\\\\\\\\\\\\\
+ local loginPassword = password()\\\\\\\\\\\\\\\
+ local uid = detectUser(loginUser)\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+ if uid == nil then\\\\\\\\\\\\\\\
+  print('Login incorrect')\\\\\\\\\\\\\\\
+ elseif passwords[uid] == loginPassword then\\\\\\\\\\\\\\\
+  _G.uid = uid\\\\\\\\\\\\\\\
+  _G.user = loginUser\\\\\\\\\\\\\\\
+  os.unloadAPI('hash')\\\\\\\\\\\\\\\
+  print('')\\\\\\\\\\\\\\\
+  shell.run('/bin/ocsh.lua')\\\\\\\\\\\\\\\
+ else\\\\\\\\\\\\\\\
+  print('Login incorrect')\\\\\\\\\\\\\\\
+ end\\\\\\\\\\\\\\\
+end\\\\\\\"\\\",\\\
+  \\\"F:mkdir.lua\\\",\\\
+  \\\"\\\\\\\"local tArgs = { ... }\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+if #tArgs < 1 then\\\\\\\\\\\\\\\
+    print( \\\\\\\\\\\\\\\"mkdir: missing operand\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+    return\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+for _, v in ipairs( tArgs ) do\\\\\\\\\\\\\\\
+    local sNewDir = shell.resolve( v )\\\\\\\\\\\\\\\
+    if fs.exists( sNewDir ) and not fs.isDir( sNewDir ) then\\\\\\\\\\\\\\\
+        print( \\\\\\\\\\\\\\\"mkdir: cannot create '\\\\\\\\\\\\\\\"v .. \\\\\\\\\\\\\\\"': File exists\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+    elseif fs.isReadOnly( sNewDir ) then\\\\\\\\\\\\\\\
+        print( \\\\\\\\\\\\\\\"mkdir: cannot create directory '\\\\\\\\\\\\\\\" .. v .. \\\\\\\\\\\\\\\"': Permission denied\\\\\\\\\\\\\\\" )\\\\\\\\\\\\\\\
+    else\\\\\\\\\\\\\\\
+        fs.makeDir( sNewDir )\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+end\\\\\\\"\\\",\\\
+  \\\"F:passwd.lua\\\",\\\
+  \\\"\\\\\\\"-- Passwd --\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local fileraw = fs.open('/etc/passwd','r')\\\\\\\\\\\\\\\
+local sContents = fileraw.read()\\\\\\\\\\\\\\\
+fileraw.close()\\\\\\\\\\\\\\\
+local tContents = textutils.unserialise(sContents)\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+print('passwd: Failed to connect to password service')\\\\\\\\\\\\\\\
+print('passwd: Reason: Still in development')\\\\\\\\\\\\\\\
+--[[\\\\\\\\\\\\\\\
+local function isCorrect(p)\\\\\\\\\\\\\\\
+ local file = fs.open('/etc/passwd','r')\\\\\\\\\\\\\\\
+ local passwords = {}\\\\\\\\\\\\\\\
+ os.loadAPI('/usr/lib/hash.lua')\\\\\\\\\\\\\\\
+ while true do\\\\\\\\\\\\\\\
+  local line = file.readLine()\\\\\\\\\\\\\\\
+  if line ~= nil then\\\\\\\\\\\\\\\
+   table.insert(passwords,hash.decrypt(line))\\\\\\\\\\\\\\\
+  else\\\\\\\\\\\\\\\
+   break\\\\\\\\\\\\\\\
+  end\\\\\\\\\\\\\\\
+ end\\\\\\\\\\\\\\\
+ os.unloadAPI('hash')\\\\\\\\\\\\\\\
+ if passwords[uid] == p then\\\\\\\\\\\\\\\
+  return true\\\\\\\\\\\\\\\
+ else\\\\\\\\\\\\\\\
+  return false\\\\\\\\\\\\\\\
+ end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+print('Changing password for ' .. user)\\\\\\\\\\\\\\\
+write('Current password: ')\\\\\\\\\\\\\\\
+local pass = read('*')\\\\\\\\\\\\\\\
+if not isCorrect(pass) then\\\\\\\\\\\\\\\
+ os.sleep(1)\\\\\\\\\\\\\\\
+ print('passwd: Authentication failure')\\\\\\\\\\\\\\\
+ print('passwd: password unchanged')\\\\\\\\\\\\\\\
+else\\\\\\\\\\\\\\\
+ write('New password: ')\\\\\\\\\\\\\\\
+ local npass1 = read('*')\\\\\\\\\\\\\\\
+ write('Retype new password: ')\\\\\\\\\\\\\\\
+ local npass2 = read('*')\\\\\\\\\\\\\\\
+ if npass1 ~= npass2 then\\\\\\\\\\\\\\\
+  print('Sorry, passwords do not match.')\\\\\\\\\\\\\\\
+  print('passwd: Failed preliminary check by password service')\\\\\\\\\\\\\\\
+  print('passwd: password unchanged')\\\\\\\\\\\\\\\
+ else\\\\\\\\\\\\\\\
+  os.loadAPI('/usr/lib/hash.lua')\\\\\\\\\\\\\\\
+  local encoded = hash.encrypt(npass1)\\\\\\\\\\\\\\\
+  os.unloadAPI('hash')\\\\\\\\\\\\\\\
+  table.remove(tContents, uid)\\\\\\\\\\\\\\\
+  table.insert(tContents, uid, encoded)\\\\\\\\\\\\\\\
+  local sContents = textutils.serialise(tContents)\\\\\\\\\\\\\\\
+  local file = fs.open('/etc/passwd','w')\\\\\\\\\\\\\\\
+  file.write(sContents)\\\\\\\\\\\\\\\
+  file.close()\\\\\\\\\\\\\\\
+  print('passwd: password updated successfully')\\\\\\\\\\\\\\\
+ end\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+]]--\\\\\\\"\\\",\\\
+  \\\"F:reboot.lua\\\",\\\
+  \\\"\\\\\\\"ccinit.reboot()\\\\\\\"\\\",\\\
+  \\\"F:rm.lua\\\",\\\
+  \\\"\\\\\\\"local args = table.pack(...)\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+if args.n < 1 then\\\\\\\\\\\\\\\
+    print(\\\\\\\\\\\\\\\"rm: missing operand\\\\\\\\\\\\\\\")\\\\\\\\\\\\\\\
+    return\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+for i = 1, args.n do\\\\\\\\\\\\\\\
+    local files = fs.find(shell.resolve(args[i]))\\\\\\\\\\\\\\\
+    if #files > 0 then\\\\\\\\\\\\\\\
+        for n, file in ipairs(files) do\\\\\\\\\\\\\\\
+            fs.delete(file)\\\\\\\\\\\\\\\
+        end\\\\\\\\\\\\\\\
+    else\\\\\\\\\\\\\\\
+        print(\\\\\\\\\\\\\\\"rm: cannot remove '\\\\\\\\\\\\\\\" .. args[i] .. \\\\\\\\\\\\\\\"': No such file or directory\\\\\\\\\\\\\\\")\\\\\\\\\\\\\\\
+    end\\\\\\\\\\\\\\\
+end\\\\\\\"\\\",\\\
+  \\\"F:shutdown.lua\\\",\\\
+  \\\"\\\\\\\"-- Shutdown script --\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+ccinit.shutdown()\\\\\\\"\\\",\\\
+  \\\"F:which.lua\\\",\\\
+  \\\"\\\\\\\"-- Which\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+local args = {...}\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+if args[1] then\\\\\\\\\\\\\\\
+ local path = shell.resolveProgram(args[1])\\\\\\\\\\\\\\\
+ if path:sub(-4) == '.lua' then\\\\\\\\\\\\\\\
+  path = path:sub(1,-5)\\\\\\\\\\\\\\\
+ end\\\\\\\\\\\\\\\
+ print(path)\\\\\\\\\\\\\\\
+else\\\\\\\\\\\\\\\
+ print('Usage: which COMMAND')\\\\\\\\\\\\\\\
+end\\\\\\\"\\\",\\\
+}\",\
+  \"D:lib\",\
+  \"{\\\
+  \\\"F:hash.lua\\\",\\\
+  \\\"\\\\\\\"-- Very weak encoding --\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+function encrypt(text)\\\\\\\\\\\\\\\
+ --for i=1, string.len(text) do\\\\\\\\\\\\\\\
+  --table.insert(tIn,text:sub(i,i))\\\\\\\\\\\\\\\
+  --i = i + 1\\\\\\\\\\\\\\\
+ --end\\\\\\\\\\\\\\\
+ tOut = string.reverse(string.rep(text,3))\\\\\\\\\\\\\\\
+ return tOut\\\\\\\\\\\\\\\
+end\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\
+function decrypt(text)\\\\\\\\\\\\\\\
+ local len = string.len(text)/3\\\\\\\\\\\\\\\
+ local str = text:sub(1,len)\\\\\\\\\\\\\\\
+ local rtn = string.reverse(str)\\\\\\\\\\\\\\\
+ return rtn\\\\\\\\\\\\\\\
+end\\\\\\\"\\\",\\\
+}\",\
+  \"D:local\",\
+  \"{\\\
+  \\\"D:bin\\\",\\\
+  \\\"{}\\\",\\\
+  \\\"D:lib\\\",\\\
+  \\\"{}\\\",\\\
+}\",\
+  \"D:share\",\
+  \"{}\",\
+}",
+  [ 31 ] = "D:var",
+  [ 32 ] = "{\
+  \"D:log\",\
+  \"{\\\
+  \\\"F:dmesg.log\\\",\\\
+  \\\"\\\\\\\"[ 0 ] Linux version 0.6.0-1-OC (CC version 1.8) Thurs Aug 8 20:23:03 UTC 2019\\\\\\\\\\\\\\\
+[ 0.00 ] KERNEL supported cpus:\\\\\\\\\\\\\\\
+[ 0.00 ]  ComputerCraft CC6451\\\\\\\\\\\\\\\
+[ 0.00 ] secureboot: No secure boot detected\\\\\\\\\\\\\\\
+[ 0.00 ] DMI: ComputerCraft Advanced Computer/Color Computer\\\\\\\\\\\\\\\
+[ 0.00 ] ACPI: Supported ACPI: shutdown, reboot\\\\\\\\\\\\\\\
+[ 0.00 ] ACPI: Suspend and sleep are not supported\\\\\\\\\\\\\\\
+[ 0.00 ] Booting nonvirtualized kernel on ComputerCraft hardware\\\\\\\\\\\\\\\
+[ 0.00 ] DMAR: IOMMU not enabled: unsupported CPU architecture CC6451\\\\\\\\\\\\\\\
+[ 0.02 ] Detected 876.049KHz processor\\\\\\\\\\\\\\\
+[ 0.02 ] CPU: Physical Processor ID: 0\\\\\\\\\\\\\\\
+[ 0.03 ] CPU: Processor Core ID: 0\\\\\\\\\\\\\\\
+[ 0.03 ] CPU0: Thermal monitoring disabled (not needed)\\\\\\\\\\\\\\\
+[ 0.03 ] Spectre V2: Unaffected CPU architecture\\\\\\\\\\\\\\\
+[ 0.03 ] Spectre V2: Mitigation not enabled\\\\\\\\\\\\\\\
+[ 0.03 ] smpboot: CPU0: ComputerCraft CC6451\\\\\\\\\\\\\\\
+[ 0.03 ] Performance Events: Lua5.1 events\\\\\\\\\\\\\\\
+[ 0.03 ] smp: Bringing up secondary CPUs ...\\\\\\\\\\\\\\\
+[ 0.03 ] smp: No secondary CPUs found\\\\\\\\\\\\\\\
+[ 0.03 ] smp: brought up 0 node, 1 CPUs\\\\\\\\\\\\\\\
+[ 0.03 ] smpboot: Total of 1 processors activated\\\\\\\\\\\\\\\
+[ 0.04 ] devtmpfs: initialized\\\\\\\\\\\\\\\
+[ 0.04 ] ACPI: bus type PCI registered\\\\\\\\\\\\\\\
+[ 0.04 ] pci_bus 0000:00: computercraft display\\\\\\\\\\\\\\\
+[ 0.04 ] PCI-DMA: Using software rendering for display\\\\\\\\\\\\\\\
+[ 0.04 ] efifb: dmi detected ComputerCraft Advanced Computer - software rendering enabled\\\\\\\\\\\\\\\
+[ 0.04 ] efifb: mode is 51x19x4\\\\\\\\\\\\\\\
+[ 0.04 ] cc6451: PNP: No PS/2 controller found.\\\\\\\\\\\\\\\
+[ 0.04 ] ACPI: bus type CCDB registered\\\\\\\\\\\\\\\
+[ 0.04 ] ccdb1: CCDB size 0\\\\\\\\\\\\\\\
+[ 0.05 ] CC-FS (ccd1): mounted filesystem with ordered data mode\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: ccinit 0.2.2-09-0-cc running in system mode.\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: Detected architecture CC6451\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: Set hostname to <oclinux>\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: Finding peripherals\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: Welcome to OC Linux!\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: Initializing modules necessary for the system\\\\\\\\\\\\\\\
+[ -8.7 ] ccinit[1]: Unloading system modules\\\\\\\\\\\\\\\
+[ -8.7 ] ccinit[1]: Unmounting disks\\\\\\\\\\\\\\\
+[ -8.7 ] ccinit[1]: Unmounted disks\\\\\\\\\\\\\\\
+[ -8.7 ] ccinit[1]: Exiting ccinit\\\\\\\\\\\\\\\
+[ -8.7 ] Fast shutdown: no\\\\\\\\\\\\\\\
+[ -8.7 ] Spectre V2: no mitigations to disable\\\\\\\\\\\\\\\
+[ -8.7 ] devtmpfs: uninitialized\\\\\\\\\\\\\\\
+[ -8.7 ] pci_bus 0000:00: computercraft display\\\\\\\\\\\\\\\
+[ -8.7 ] ACPI: bus type PCI unregistered\\\\\\\\\\\\\\\
+[ -8.7 ] cc6451: PNP: No PS/2 controller to uninitialize\\\\\\\\\\\\\\\
+[ -8.7 ] CC-FS (ccd1): unmounted filesystem\\\\\\\\\\\\\\\
+[ -8.7 ] ACPI: bus type CCDB unregistered\\\\\\\\\\\\\\\
+[ -8.7 ] Calling ACPI reboot\\\\\\\"\\\",\\\
+  \\\"F:dmesg.log.old\\\",\\\
+  \\\"\\\\\\\"[ 0 ] Linux version 0.6.0-1-OC (CC version 1.8) Thurs Aug 8 20:23:03 UTC 2019\\\\\\\\\\\\\\\
+[ 0.00 ] KERNEL supported cpus:\\\\\\\\\\\\\\\
+[ 0.00 ]  ComputerCraft CC6451\\\\\\\\\\\\\\\
+[ 0.00 ] secureboot: No secure boot detected\\\\\\\\\\\\\\\
+[ 0.00 ] DMI: ComputerCraft Advanced Computer/Color Computer\\\\\\\\\\\\\\\
+[ 0.00 ] ACPI: Supported ACPI: shutdown, reboot\\\\\\\\\\\\\\\
+[ 0.00 ] ACPI: Suspend and sleep are not supported\\\\\\\\\\\\\\\
+[ 0.00 ] Booting nonvirtualized kernel on ComputerCraft hardware\\\\\\\\\\\\\\\
+[ 0.00 ] DMAR: IOMMU not enabled: unsupported CPU architecture CC6451\\\\\\\\\\\\\\\
+[ 0.02 ] Detected 882.635KHz processor\\\\\\\\\\\\\\\
+[ 0.03 ] CPU: Physical Processor ID: 0\\\\\\\\\\\\\\\
+[ 0.03 ] CPU: Processor Core ID: 0\\\\\\\\\\\\\\\
+[ 0.03 ] CPU0: Thermal monitoring disabled (not needed)\\\\\\\\\\\\\\\
+[ 0.03 ] Spectre V2: Unaffected CPU architecture\\\\\\\\\\\\\\\
+[ 0.03 ] Spectre V2: Mitigation not enabled\\\\\\\\\\\\\\\
+[ 0.03 ] smpboot: CPU0: ComputerCraft CC6451\\\\\\\\\\\\\\\
+[ 0.03 ] Performance Events: Lua5.1 events\\\\\\\\\\\\\\\
+[ 0.03 ] smp: Bringing up secondary CPUs ...\\\\\\\\\\\\\\\
+[ 0.03 ] smp: No secondary CPUs found\\\\\\\\\\\\\\\
+[ 0.03 ] smp: brought up 0 node, 1 CPUs\\\\\\\\\\\\\\\
+[ 0.04 ] smpboot: Total of 1 processors activated\\\\\\\\\\\\\\\
+[ 0.04 ] devtmpfs: initialized\\\\\\\\\\\\\\\
+[ 0.04 ] ACPI: bus type PCI registered\\\\\\\\\\\\\\\
+[ 0.04 ] pci_bus 0000:00: computercraft display\\\\\\\\\\\\\\\
+[ 0.04 ] PCI-DMA: Using software rendering for display\\\\\\\\\\\\\\\
+[ 0.04 ] efifb: dmi detected ComputerCraft Advanced Computer - software rendering enabled\\\\\\\\\\\\\\\
+[ 0.04 ] efifb: mode is 51x19x4\\\\\\\\\\\\\\\
+[ 0.04 ] cc6451: PNP: No PS/2 controller found.\\\\\\\\\\\\\\\
+[ 0.04 ] ACPI: bus type CCDB registered\\\\\\\\\\\\\\\
+[ 0.04 ] ccdb1: CCDB size 0\\\\\\\\\\\\\\\
+[ 0.05 ] CC-FS (ccd1): mounted filesystem with ordered data mode\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: ccinit 0.2.2-09-0-cc running in system mode.\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: Detected architecture CC6451\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: Set hostname to <oclinux>\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: Finding peripherals\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: Welcome to OC Linux!\\\\\\\\\\\\\\\
+[ 0.05 ] ccinit[1]: Initializing modules necessary for the system\\\\\\\\\\\\\\\
+[ 8.03 ] ccinit[1]: Unloading system modules\\\\\\\\\\\\\\\
+[ 8.03 ] ccinit[1]: Unmounting disks\\\\\\\\\\\\\\\
+[ 8.03 ] ccinit[1]: Unmounted disks\\\\\\\\\\\\\\\
+[ 8.04 ] ccinit[1]: Exiting ccinit\\\\\\\\\\\\\\\
+[ 8.04 ] Fast shutdown: no\\\\\\\\\\\\\\\
+[ 8.04 ] Spectre V2: no mitigations to disable\\\\\\\\\\\\\\\
+[ 8.04 ] devtmpfs: uninitialized\\\\\\\\\\\\\\\
+[ 8.04 ] pci_bus 0000:00: computercraft display\\\\\\\\\\\\\\\
+[ 8.04 ] ACPI: bus type PCI unregistered\\\\\\\\\\\\\\\
+[ 8.04 ] cc6451: PNP: No PS/2 controller to uninitialize\\\\\\\\\\\\\\\
+[ 8.04 ] CC-FS (ccd1): unmounted filesystem\\\\\\\\\\\\\\\
+[ 8.04 ] ACPI: bus type CCDB unregistered\\\\\\\\\\\\\\\
+[ 8.04 ] Calling ACPI reboot\\\\\\\"\\\",\\\
+}\",\
+}",
+}
