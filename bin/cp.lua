@@ -1,3 +1,4 @@
+-- CP --
 
 local tArgs = { ... }
 if #tArgs < 2 then
@@ -5,16 +6,14 @@ if #tArgs < 2 then
     return
 end
 
-local sSource = shell.resolve( tArgs[1] )
+local sFile = shell.resolve( tArgs[1] )
 local sDest = shell.resolve( tArgs[2] )
 if fs.exists( sDest ) then
-    write( "cp: overwrite '" .. sDest .. "'? " )
-    if string.lower(read()) == 'y' then
+    print('cp: ' .. sDest .. ': File exists')
+else
+    if fs.exists( sFile ) then
         fs.copy(sFile, sDest)
     else
-        fs.copy(sFile, sDest)
+        print("cp: cannot stat '" .. sFile .. "': No such file or directory")
     end
-else
-    print( "cp: cannot stat '" .. sFile .. "': No such file or directory" )
-    return
 end
