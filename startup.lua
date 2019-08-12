@@ -3,6 +3,8 @@
 bios = {}
 
 craftOS_version = os.version()
+bios.["pullEvent"] = os.pullEvent
+os.pullEvent = os.pullEventRaw
 
 bios.version = function()
  return "OCBios version 0.02"
