@@ -2,7 +2,7 @@
 Linux, for ComputerCraft. Much better than [this](https://github.com/ocawesome101/oc-linux-cc-old).
 
 #### Installation
-Simply run `pastebin run xpmeyimk <version>` in your CraftOS shell, where `<version>` is a number (see below for a list of versions). While OC Linux will work best on an Advanced Computer, it should work on any computer, though (in the case of the Command Computer) potentially without full support.
+Simply run `pastebin run wMhFGDAr` in your CraftOS shell. While OC Linux will work best on an Advanced Computer, it should work on any computer, though (in the case of the Command Computer) potentially without full support.
 
 #### Changelog
 0.6
