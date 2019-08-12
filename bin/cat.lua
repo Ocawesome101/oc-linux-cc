@@ -11,13 +11,16 @@ if not args[1] then
    break
   end
  end
-elseif not fs.exists(args[1]) then
- print('cat: ' .. args[1] .. ': No such file or directory')
-elseif fs.isDir(args[1]) then
- print('cat: ' .. args[1] .. ': Is a directory')
 else
- local fileraw = fs.open(args[1],'r')
- local file = fileraw.readAll()
- fileraw.close()
- print(file)
+ local path = shell.resolve(args[1])
+ if not fs.exists(path) then
+  print('cat: ' .. args[1] .. ': No such file or directory')
+ elseif fs.isDir(path) then
+  print('cat: ' .. args[1] .. ': Is a directory')
+ else
+  local fileraw = fs.open(path,'r')
+  local file = fileraw.readAll()
+  fileraw.close()
+  print(file)
+ end
 end
