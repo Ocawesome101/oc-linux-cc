@@ -1,0 +1,3 @@
+-- Shutdown script --
+
+ccinit.shutdown()
