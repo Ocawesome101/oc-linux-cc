@@ -59,8 +59,6 @@ local function detectUser(u)
 end
 
 while true do
- term.clear()
- term.setCursorPos(1,2)
  local loginUser = user()
  local loginPassword = password()
  local uid = detectUser(loginUser)
@@ -75,5 +73,8 @@ while true do
   shell.run('/bin/ocsh.lua')
  else
   print('Login incorrect')
+  os.sleep(1)
  end
+ term.clear()
+ term.setCursorPos(1,2)
 end
