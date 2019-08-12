@@ -1,0 +1,2 @@
+-- PWD --
+print(shell.dir())
