@@ -3,7 +3,7 @@
 bios = {}
 
 craftOS_version = os.version()
-bios.["pullEvent"] = os.pullEvent
+bios["pullEvent"] = os.pullEvent -- Some programs might need it
 os.pullEvent = os.pullEventRaw
 
 bios.version = function()
