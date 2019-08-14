@@ -12,7 +12,7 @@ Dates are formatted `MM/DD/YY`.
  - Includes a basic shell and commands. These will improve with time.
 Features:
  - Better login system than the previous OC Linux (0.5.0).
- - Two users, `root` (default password `root`) and `user` (default password `user`).
+ - Two users, `root` (default password `root`) and `user` (default password `password`).
  - Detects when the user is in their home directory and changes the directory from i.e. `/home` to `~`. Also will change the prompt to `#` or `$` depending on the user.
 - Realistic boot and shutdown logging, 
 - A custom BIOS that supports (or should support) booting from floppy disks on any side of the computer. (Not strictly a part of OC Linux, but a nice feature. Adds some polish.)
