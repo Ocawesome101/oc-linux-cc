@@ -20,6 +20,12 @@ Features:
 - A custom BIOS that supports (or should support) booting from floppy disks on any side of the computer. (Not strictly a part of OC Linux, but a nice feature. Adds some polish.)
 - Really terrible password "protection". All it does is obscure.
 
+08/11/19
+ - Added pwd
+
+08/15/19
+ - Moved OC-BIOS into a separate repo
+
 #### Planned Features
 - A package manager.
 - Some kind of permissions system.
@@ -52,7 +58,7 @@ After adding one user (in this example `john`, with password `foobar`), your `/e
 
 - To change your password, first figure out your UID (i.e. `john` from the previous example would be `3`.) Then, change line `<your UID>` of `/etc/passwd` to your desired password repeated thrice over and reversed (`word` becomes `drowdrowdrow`).
 
-- To set your hostname, you can simply edit `/etc/hostname` and reboot. The system reads `/etc/hostname` when booting; the hostname can later be accessed as `_G._HOSTNAME` or, simply, `_HOSTNAME`.
+- To set your hostname, you can simply edit `/etc/hostname` and reboot. The system reads `/etc/hostname` when booting; your hostname can later be accessed as `_G._HOSTNAME` or, simply, `_HOSTNAME`.
 
 ##### Is this safe?
 All builds are programmed and tested in the latest version of CCEmuX (version 88ba9e7a at the time of writing).
