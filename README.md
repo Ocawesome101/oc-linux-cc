@@ -4,6 +4,8 @@ Linux, for ComputerCraft. Much better than [this](https://github.com/ocawesome10
 #### Installation
 Simply run `pastebin run wMhFGDAr` in your CraftOS shell. While OC Linux will work best on an Advanced Computer, it should work on any computer, though (in the case of the Command Computer) potentially without full support.
 
+# READ: OC Linux only works on CraftOS 1.8 and above!
+
 #### Changelog
 Dates are formatted `MM/DD/YY`.
 
