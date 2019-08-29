@@ -468,11 +468,15 @@ else
         local sLine
         sLine = read( nil, tCommandHistory )
         
-        if fs.isDir(sLine) then
-            print('ocsh: ' .. tokenise(sLine)[1] .. ': Is a directory')
-        elseif sLine:match("%S") and tCommandHistory[#tCommandHistory] ~= sLine then
-            table.insert( tCommandHistory, sLine )
+        if sLine ~= nil and sLine ~= '' then
+        
+            if fs.isDir(sLine) then
+                print('ocsh: ' .. tokenise(sLine)[1] .. ': Is a directory')
+            elseif sLine:match("%S") and tCommandHistory[#tCommandHistory] ~= sLine then
+                table.insert( tCommandHistory, sLine )
+            end
+            shell.run( sLine )
+        
         end
-        shell.run( sLine )
     end
 end
