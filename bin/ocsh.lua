@@ -446,7 +446,7 @@ else
 
     -- Read commands and execute them
     local tCommandHistory = {}
-    shell.setPath('/sbin:/bin:/usr/bin:/usr/sbin:/uar/games:/usr/local/bin')
+    shell.setPath('/sbin:/bin:/usr/bin:/usr/sbin:/usr/games:/usr/local/bin')
     while not bExit do
         term.redirect( parentTerm )
         term.setBackgroundColor( bgColour )
