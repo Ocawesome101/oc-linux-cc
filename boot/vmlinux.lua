@@ -1,7 +1,7 @@
 -- The OC Linux kernel. --
 
 -- Functions
-_G.KV = 'Linux version 0.6.0-1-OC (CC version 1.8) Thurs Aug 8 20:23:03 UTC 2019'
+_G.KV = 'Linux version 0.7.8-49-OC (CC version 1.8) Tues Oct 8 22:27:33 EST 2019'
 
 local old = os.pullEvent 
 
