@@ -28,6 +28,8 @@ The prompt is only customizable by editing the `/bin/ocsh.lua` file and changing
 
 When you exit the shell, you will be brought back to the login screen.
 
+- If you are in a subfolder of your home folder, the full path (`/home/user/path`, not `~/path`) will be displayed.
+
 ## 4. Shutdown
 
 The shutdown process is fairly simple: unload CCInit, unload the kernel, close the log file (located at `/var/log/dmesg.log` and/or `/var/log/dmesg.log.old`). After this has been done, OC Linux calls an ACPI shutdown.
