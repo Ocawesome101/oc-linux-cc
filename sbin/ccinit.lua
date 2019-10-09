@@ -1,6 +1,6 @@
 -- Init script for OC Linux --
 
-_G._CCINIT_VERSION = '0.2.2-09-0-cc'
+_G._CCINIT_VERSION = '0.3.2-10-8-cc'
 
 _G.ccinit = {}
 
