@@ -22,7 +22,7 @@ end
 
 
 syslog('ccinit[1]: ccinit '.._CCINIT_VERSION..' running in system mode.')
-syslog('ccinit[1]: Detected architecture '.._ARCH)
+syslog('ccinit[1]: Detected architecture '..cpu.arch)
 local file = fs.open('/etc/hostname','r')
 _G._HOSTNAME = file.readAll()
 file.close()
@@ -38,7 +38,7 @@ for i=1, #sides do
 end
 
 syslog('ccinit[1]: Welcome to OC Linux!')
-if not term.isColor() then
+if not cpu.isfull then
  syslog('ccinit[1]: warn: Non-advanced computers are not officially supported')
 end
 

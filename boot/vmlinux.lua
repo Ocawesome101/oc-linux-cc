@@ -60,6 +60,7 @@ function kernel.panic(reason)
  local file = fs.open('/var/log/panic.log','w')
  file.write('[ '..getTime()..' ] Kernel panic: '..reason)
  file.close()
+ _LOG.close()
  while true do
   local e,id = os.pullEventRaw()
   if e == 'char' then
@@ -92,11 +93,12 @@ if fs.exists('/var/log/dmesg.log') then
 end
 _G._LOG = fs.open('/var/log/dmesg.log','a')
 
-function _G.log(string)
+function _G.log(str)
  local time = tostring(getTime()):sub(1,4)
- local out = '[ '..time..' ] '..string
+ local out = '[ '..time..' ] '..str
  print(out)
  _LOG.write(out..'\n')
+ _LOG.flush()
  os.sleep(0.0001)
 end
 
@@ -137,36 +139,57 @@ local function getClock()
 end
 
 --Startup
-cpuid = 'ComputerCraft CC6451'
-_G._ARCH, _G._CPUID = 'CC6451', cpuid
+local full
+
+if term.isColor() then
+ full = true
+else
+ full = false
+end
+
+local cpuid
+
+_G.cpu = {}
+cpu.isfull = full
+
+if cpu.isfull then
+ cpuid = 'ComputerCraft CC6451'
+ cpu.arch, cpu.id = 'CC6451', cpuid
+else
+ cpuid = 'ComputerCraft CC3251'
+ cpu.arch, cpu.id = 'CC3251', cpuid
+end
+
+_G.hw = {}
 
 log(os.version())
 log('KERNEL supported cpus:')
 log(' ComputerCraft CC6451')
+log(' ComputerCraft CC3251')
 log('secureboot: No secure boot detected')
-if term.isColor() then
- pcid = 'ComputerCraft Advanced Computer'
- hwid = pcid..'/Color Computer'
+if cpu.isfull then
+ hw.pcid = 'ComputerCraft Advanced Computer'
+ hw.id = hw.pcid..'/Color Computer'
 else
- pcid = 'ComputerCraft Standard Computer'
- hwid = pcid..'/Grayscale Computer'
+ hw.pcid = 'ComputerCraft Standard Computer'
+ hw.id = hw.pcid..'/Grayscale Computer'
 end
-log('DMI: '..hwid)
+log('DMI: '..hw.id)
 log('ACPI: Supported ACPI: shutdown, reboot')
 log('ACPI: Suspend and sleep are not supported')
 log('Booting nonvirtualized kernel on ComputerCraft hardware')
-log('DMAR: IOMMU not enabled: unsupported CPU architecture CC6451')
+log('DMAR: IOMMU not enabled: unsupported CPU architecture ' .. cpu.arch)
 
-local cpuspeed = getClock()
+cpu.clock = getClock()
 
-log('Detected '..cpuspeed..'KHz processor')
+log('Detected '..cpu.clock..'KHz processor')
 
 log('CPU: Physical Processor ID: 0')
 log('CPU: Processor Core ID: 0')
 log('CPU0: Thermal monitoring disabled (not needed)')
 log('Spectre V2: Unaffected CPU architecture')
 log('Spectre V2: Mitigation not enabled')
-log('smpboot: CPU0: '..cpuid)
+log('smpboot: CPU0: '.. cpu.id)
 log('Performance Events: Lua5.1 events')
 log('smp: Bringing up secondary CPUs ...')
 log('smp: No secondary CPUs found')
@@ -176,15 +199,15 @@ log('devtmpfs: initialized')
 log('ACPI: bus type PCI registered')
 log('pci_bus 0000:00: computercraft display')
 log('PCI-DMA: Using software rendering for display')
-log('efifb: dmi detected '..pcid..' - software rendering enabled')
+log('efifb: dmi detected '..hw.pcid..' - software rendering enabled')
 local w,h = display.getSize()
-if term.isColor() then
+if cpu.isfull then
  depth = 4
 else
  depth = 1
 end
 log('efifb: mode is '..tostring(w)..'x'..tostring(h)..'x'..tostring(depth))
-log('cc6451: PNP: No PS/2 controller found.')
+log(cpu.arch .. ': PNP: No PS/2 controller found.')
 log('ACPI: bus type CCDB registered')
 log('ccdb1: CCDB size '..fs.getSize('/'))
 

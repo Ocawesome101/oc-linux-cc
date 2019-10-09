@@ -1,14 +1,15 @@
 [ 0 ] Linux version 0.6.0-1-OC (CC version 1.8) Thurs Aug 8 20:23:03 UTC 2019
 [ 0.00 ] KERNEL supported cpus:
 [ 0.00 ]  ComputerCraft CC6451
+[ 0.00 ]  ComputerCraft CC3251
 [ 0.00 ] secureboot: No secure boot detected
 [ 0.00 ] DMI: ComputerCraft Advanced Computer/Color Computer
 [ 0.00 ] ACPI: Supported ACPI: shutdown, reboot
 [ 0.00 ] ACPI: Suspend and sleep are not supported
 [ 0.00 ] Booting nonvirtualized kernel on ComputerCraft hardware
 [ 0.00 ] DMAR: IOMMU not enabled: unsupported CPU architecture CC6451
-[ 0.02 ] Detected 876.049KHz processor
-[ 0.02 ] CPU: Physical Processor ID: 0
+[ 0.03 ] Detected 539.412KHz processor
+[ 0.03 ] CPU: Physical Processor ID: 0
 [ 0.03 ] CPU: Processor Core ID: 0
 [ 0.03 ] CPU0: Thermal monitoring disabled (not needed)
 [ 0.03 ] Spectre V2: Unaffected CPU architecture
@@ -17,17 +18,17 @@
 [ 0.03 ] Performance Events: Lua5.1 events
 [ 0.03 ] smp: Bringing up secondary CPUs ...
 [ 0.03 ] smp: No secondary CPUs found
-[ 0.03 ] smp: brought up 0 node, 1 CPUs
-[ 0.03 ] smpboot: Total of 1 processors activated
+[ 0.04 ] smp: brought up 0 node, 1 CPUs
+[ 0.04 ] smpboot: Total of 1 processors activated
 [ 0.04 ] devtmpfs: initialized
 [ 0.04 ] ACPI: bus type PCI registered
 [ 0.04 ] pci_bus 0000:00: computercraft display
 [ 0.04 ] PCI-DMA: Using software rendering for display
 [ 0.04 ] efifb: dmi detected ComputerCraft Advanced Computer - software rendering enabled
 [ 0.04 ] efifb: mode is 51x19x4
-[ 0.04 ] cc6451: PNP: No PS/2 controller found.
+[ 0.04 ] CC6451: PNP: No PS/2 controller found.
 [ 0.04 ] ACPI: bus type CCDB registered
-[ 0.04 ] ccdb1: CCDB size 0
+[ 0.05 ] ccdb1: CCDB size 0
 [ 0.05 ] CC-FS (ccd1): mounted filesystem with ordered data mode
 [ 0.05 ] ccinit[1]: ccinit 0.2.2-09-0-cc running in system mode.
 [ 0.05 ] ccinit[1]: Detected architecture CC6451
@@ -35,16 +36,16 @@
 [ 0.05 ] ccinit[1]: Finding peripherals
 [ 0.05 ] ccinit[1]: Welcome to OC Linux!
 [ 0.05 ] ccinit[1]: Initializing modules necessary for the system
-[ -8.7 ] ccinit[1]: Unloading system modules
-[ -8.7 ] ccinit[1]: Unmounting disks
-[ -8.7 ] ccinit[1]: Unmounted disks
-[ -8.7 ] ccinit[1]: Exiting ccinit
-[ -8.7 ] Fast shutdown: no
-[ -8.7 ] Spectre V2: no mitigations to disable
-[ -8.7 ] devtmpfs: uninitialized
-[ -8.7 ] pci_bus 0000:00: computercraft display
-[ -8.7 ] ACPI: bus type PCI unregistered
-[ -8.7 ] cc6451: PNP: No PS/2 controller to uninitialize
-[ -8.7 ] CC-FS (ccd1): unmounted filesystem
-[ -8.7 ] ACPI: bus type CCDB unregistered
-[ -8.7 ] Calling ACPI reboot
+[ 6.22 ] ccinit[1]: Unloading system modules
+[ 6.23 ] ccinit[1]: Unmounting disks
+[ 6.23 ] ccinit[1]: Unmounted disks
+[ 6.23 ] ccinit[1]: Exiting ccinit
+[ 6.23 ] Fast shutdown: no
+[ 6.23 ] Spectre V2: no mitigations to disable
+[ 6.23 ] devtmpfs: uninitialized
+[ 6.23 ] pci_bus 0000:00: computercraft display
+[ 6.23 ] ACPI: bus type PCI unregistered
+[ 6.23 ] cc6451: PNP: No PS/2 controller to uninitialize
+[ 6.23 ] CC-FS (ccd1): unmounted filesystem
+[ 6.24 ] ACPI: bus type CCDB unregistered
+[ 6.24 ] Calling ACPI shutdown
