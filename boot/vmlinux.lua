@@ -20,9 +20,8 @@ function kernel.halt()
  log('Fast shutdown: no')
  log('Spectre V2: no mitigations to disable')
  local dirs = {'/proc','/run','/tmp','/sys','/dev','/mnt'}
- for i=1, #dirs do
-  fs.delete(dirs[i])
-  i = i + 1
+ for i=1, #dirs, 1 do
+  if fs.exists(dirs[i]) then fs.delete(dirs[i]) end
  end
  log('devtmpfs: uninitialized')
  log('pci_bus 0000:00: computercraft display')
@@ -40,9 +39,8 @@ function kernel.restart()
  log('Fast shutdown: no')
  log('Spectre V2: no mitigations to disable')
  local dirs = {'/proc','/run','/tmp','/sys','/dev','/mnt'}
- for i=1, #dirs do
-  fs.delete(dirs[i])
-  i = i + 1
+ for i=1, #dirs, 1 do
+  if fs.exists(dirs[i]) then fs.delete(dirs[i]) end
  end
  log('devtmpfs: uninitialized')
  log('pci_bus 0000:00: computercraft display')
