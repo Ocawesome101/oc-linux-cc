@@ -32,6 +32,7 @@ function kernel.halt()
  log('ACPI: bus type CCDB unregistered')
  log('Calling ACPI shutdown')
  _LOG.close()
+ if ccemux then ccemux.close() end
  os.shutdown()
 end
 
@@ -91,6 +92,7 @@ end
 if fs.exists('/var/log/dmesg.log') then
  fs.move('/var/log/dmesg.log','/var/log/dmesg.log.old')
 end
+
 _G._LOG = fs.open('/var/log/dmesg.log','a')
 
 function _G.log(str)
