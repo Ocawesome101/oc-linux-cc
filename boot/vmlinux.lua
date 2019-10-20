@@ -10,10 +10,10 @@ os.pullEvent = os.pullEventRaw
 _G.kernel = {}
 _G.display = {}
 
-_G.biosTime = os.time()
+_G.biosTime = os.epoch("utc")
 
 _G.getTime = function()
- return os.time() - biosTime
+ return os.epoch("utc") - biosTime
 end
 
 function kernel.halt()
