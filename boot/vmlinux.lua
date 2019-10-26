@@ -99,7 +99,7 @@ function _G.log(str)
  print(out)
  _LOG.write(out..'\n')
  _LOG.flush()
- os.sleep(0.0001)
+ os.sleep(0.05)
 end
 
 function _G.syslog(str)
